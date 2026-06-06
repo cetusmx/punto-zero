@@ -5,9 +5,13 @@ services:
       - "3308:3306"
 
   app:
+    ports:
+      - "3020:3001"
     env_file:
       - ./server/.env
     restart: always
 
   client:
+    ports:
+      - "3021:80"
     restart: always

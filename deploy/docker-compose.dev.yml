@@ -2,3 +2,11 @@ services:
   mysql:
     ports:
       - "3306:3306"
+
+  app:
+    ports:
+      - "3001:3001"
+
+  client:
+    ports:
+      - "80:80"
