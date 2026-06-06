@@ -1,0 +1,11 @@
+services:
+  app:
+    env_file:
+      - ./server/.env
+    restart: always
+
+  client:
+    restart: always
+
+  mysql:
+    restart: always

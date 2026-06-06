@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  Alta
+  Pausa
+  Baja
+}
+
+enum UserAccess {
+  Habilitado
+  Bloqueado
+}
+
+enum PointStatus {
+  Activo
+  Inactivo
+}
+
+enum AttendanceStatus {
+  Pendiente
+  Asistio
+  Falta
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  name      String?
+  phone     String     @unique
+  email     String?
+  password  String
+  role      String     @default("volunteer")
+  status    UserStatus @default(Alta)
+  access    UserAccess @default(Habilitado)
+  gender    String?
+  age       Int?
+  esquema   String?
+  residuo   String?
+  frecuencia String?
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  schedulings        Scheduling[]
+  attendances        Attendance[]
+  badges             Badge[]
+  certificateQRs     CertificateQR[]
+  notificationBadges NotificationBadge[]
+
+  @@map("users")
+}
+
+model CollectionPoint {
+  id        Int         @id @default(autoincrement())
+  name      String
+  colonia   String
+  address   String?     @map("direccion")
+  lat       Float?
+  lng       Float?
+  horario   String?
+  status    PointStatus @default(Activo)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  schedulings       Scheduling[]
+  unavailableDates  UnavailableDate[]
+
+  @@map("collection_points")
+}
+
+model Scheduling {
+  id                Int              @id @default(autoincrement())
+  userId            Int              @map("user_id")
+  pointId           Int              @map("point_id")
+  saturdayDate      DateTime         @map("saturday_date")
+  status            AttendanceStatus @default(Pendiente)
+  acceptedTerms     Boolean          @default(false) @map("accepted_terms")
+  cancelledAt       DateTime?        @map("cancelled_at")
+  cancellationType  String?          @map("cancellation_type")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  user       User           @relation(fields: [userId], references: [id])
+  point      CollectionPoint @relation(fields: [pointId], references: [id])
+  attendance Attendance?
+
+  @@unique([pointId, saturdayDate])
+  @@map("schedulings")
+}
+
+model Attendance {
+  id           Int              @id @default(autoincrement())
+  schedulingId Int              @unique @map("scheduling_id")
+  userId       Int              @map("user_id")
+  status       AttendanceStatus @default(Asistio)
+  registeredAt DateTime         @default(now()) @map("registered_at")
+  registeredBy Int?             @map("registered_by")
+  notes        String?
+
+  scheduling Scheduling @relation(fields: [schedulingId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@map("attendance_logs")
+}
+
+model Badge {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("badges")
+}
+
+model CertificateQR {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  type            String
+  issuedAt        DateTime @default(now()) @map("issued_at")
+  expiresAt       DateTime @map("expires_at")
+  isActive        Boolean  @default(true) @map("is_active")
+  attendancesAtIssuance Int @default(0) @map("attendances_at_issuance")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("certificate_qrs")
+}
+
+model AppConfig {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("app_config")
+}
+
+model UnavailableDate {
+  id           Int      @id @default(autoincrement())
+  pointId      Int      @map("point_id")
+  saturdayDate DateTime @map("saturday_date")
+  reason       String?
+
+  point CollectionPoint @relation(fields: [pointId], references: [id])
+
+  @@unique([pointId, saturdayDate])
+  @@map("unavailable_dates")
+}
+
+model NotificationBadge {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  category  String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notification_badges")
+}

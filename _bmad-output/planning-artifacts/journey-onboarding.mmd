@@ -1,0 +1,104 @@
+flowchart TD
+    Entry(("Usuario llega a punto-zero"))
+    EntryType{¿Cómo llega?}
+    EntryType -->|QR en punto de acopio| LandingQR["Landing: "Únete a los voluntarios"]
+    EntryType -->|Link WhatsApp| LandingWA["Landing: mismo contenido"]
+    
+    LandingQR --> Welcome
+    LandingWA --> Welcome
+
+    Welcome["Welcome Screen
+    Título: Cada sábado, una oportunidad
+    Subtítulo: Programa de recolección de desechos orgánicos
+    3 beneficios: 1. Agendas tu sábado, 2. Participas automáticamente, 3. Exención de cuotas
+    CTA: Quiero participar"]
+    
+    Welcome --> PhoneInput["Registro: Número telefónico
+    Placeholder: 55 1234 5678
+    Nota: Recibirás un código SMS"]
+    
+    PhoneInput -->|Válido| SendOTP["SMS enviado vía Twilio
+    Código de 6 dígitos
+
+    ⚠ Server-side rate limiting:
+    - Máx 3 intentos por código
+    - Cooldown 15 min tras 3er fallo
+    - Rate limit por IP (prevenir brute force)"]
+    PhoneInput -->|Inválido| PhoneError["Error: Número inválido
+    Formato esperado: 10 dígitos"]
+    PhoneError --> PhoneInput
+    
+    SendOTP --> OTPInput["Verificación SMS
+    Input: 6 dígitos
+    Timer: 60s para reenviar
+    Intentos: 3 máximos"]
+    
+    OTPInput -->|Código correcto| ProfileForm
+    OTPInput -->|Error: código incorrecto| OTPRetry{¿Menos de 3 intentos?}
+    OTPRetry -->|Sí| OTPInput
+    OTPRetry -->|No| OTPExpired["Código expirado
+    Debe solicitar uno nuevo"]
+    OTPExpired --> SendOTP
+    OTPInput -->|Error: 60s sin ingresar| OTPTimeout["Timer expirado
+    Botón: Reenviar código"]
+    OTPTimeout --> SendOTP
+    
+    ProfileForm["Completa tu perfil
+    Nombre (no editable después)
+    Edad (rango, editable)
+    Género (editable)
+    Email (contacto, no auth)
+    T&C: Acepto participar en el programa de exención
+    Botón: Listo, quiero agendar"]
+    
+    ProfileForm -->|T&C aceptados| AgendaFirstView
+    ProfileForm -->|T&C no aceptados| T&CError["Checkbox requerido
+    Debes aceptar T&C para participar"]
+    T&CError --> ProfileForm
+    
+    AgendaFirstView["Agenda - Primera vista
+    Encabezado: ¿Cuándo te sumas?
+    Grid de sábados disponibles
+    Filtros: Colonia, Punto, Solo con cupo"]
+    
+    AgendaFirstView --> SelectSlot{Selecciona un sábado}
+    SelectSlot -->|Sábado con cupo| SlotDetail["Detalle del turno
+    📍 Punto de Acopio: [Nombre]
+    🗺 Dirección: Calle, Colonia
+    ⏰ Horario: 8-10 / 10-12 / 12-2
+    👥 Cupos restantes: N disponibles"]
+    
+    SelectSlot -->|Sin cupo| NoSlot["Mensaje: Este sábado está lleno
+    Alternativas destacadas en verde"]
+    NoSlot --> AgendaFirstView
+    
+    SlotDetail --> ConfirmAction{Confirma el turno}
+    ConfirmAction -->|Confirmar| CommitmentStep["Compromiso del voluntario
+    Resumen claro:
+    • Participas un sábado a la semana
+    • 6 asistencias en 6 meses = exención
+    • 3 faltas reinician tu conteo
+    • ¿Confirmas tu participación?"]
+    
+    CommitmentStep -->|Sí, confirmo| BookSuccess["Turno agendado
+    Badge: Asistencia confirmada
+    Progreso: 0 de 6 sábados completados
+    (Te faltan 6 para tu exención)
+    Botón: Ver mi dashboard"]
+
+    CommitmentStep -->|No| AgendaFirstView
+    
+    ConfirmAction -->|Cancelar| AgendaFirstView
+    
+    SlotDetail -->|Error: cupo tomado| TakenError["Error: Este turno acaba de ser reservado
+    ⚠ Race condition: optimistic locking server-side
+    Al detectar conflicto, UI refresca grilla automáticamente"]
+    TakenError --> AgendaFirstView
+    
+    SlotDetail -->|Error: deadline pasado| DeadlineError["Error: El plazo para agendar este sábado venció (viernes 23:59)
+    Contacta al administrador si necesitas asistir"]
+    DeadlineError --> AgendaFirstView
+    
+    BookSuccess --> SaturdayFlow["El sábado recibe:
+    Badge viernes: recordatorio
+    Saturday Dashboard: punto asignado + Maps"]

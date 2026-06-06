@@ -1,0 +1,54 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: punto-zero-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: puntozero
+      MYSQL_USER: puntozero
+      MYSQL_PASSWORD: puntozero
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: punto-zero-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: mysql://puntozero:puntozero@mysql:3306/puntozero
+      JWT_SECRET: ${JWT_SECRET}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+      CLIENT_URL: http://localhost:80
+      NODE_ENV: production
+      PORT: 3001
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: punto-zero-client
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+
+volumes:
+  mysql_data:

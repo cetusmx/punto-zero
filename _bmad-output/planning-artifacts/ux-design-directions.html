@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>punto-zero — Design Directions</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f0f0; color: #1a1a1a; }
+
+  .header { background: #fff; padding: 16px 24px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 20px; font-weight: 700; color: #41703f; }
+  .header .subtitle { font-size: 13px; color: #5c5c5c; }
+
+  .tabs { display: flex; gap: 4px; background: #fff; padding: 12px 24px; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
+  .tab { padding: 8px 20px; border-radius: 20px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 14px; font-weight: 500; color: #5c5c5c; transition: all .2s; }
+  .tab:hover { border-color: #41703f; color: #41703f; }
+  .tab.active { background: #41703f; color: #fff; border-color: #41703f; }
+
+  .direction-tabs { display: flex; gap: 4px; background: #fff; padding: 8px 24px 12px; flex-wrap: wrap; }
+  .dir-tab { padding: 6px 16px; border-radius: 6px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 13px; font-weight: 500; color: #5c5c5c; transition: all .2s; }
+  .dir-tab:hover { border-color: #dbb539; color: #dbb539; }
+  .dir-tab.active { background: #dbb539; color: #fff; border-color: #dbb539; }
+
+  .showcase { display: flex; gap: 32px; padding: 32px 24px; overflow-x: auto; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+  .phone { width: 375px; min-width: 375px; background: #fff; border-radius: 32px; box-shadow: 0 8px 40px rgba(0,0,0,.12); overflow: hidden; border: 1px solid #e0e0e0; position: relative; }
+  .phone-notch { height: 28px; background: #1a1a1a; display: flex; align-items: center; justify-content: center; }
+  .phone-notch span { width: 120px; height: 6px; background: #333; border-radius: 3px; }
+  .phone-header { padding: 16px 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .phone-header h2 { font-size: 18px; font-weight: 700; }
+  .phone-header .icon-row { display: flex; gap: 12px; align-items: center; }
+  .phone-header .icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; position: relative; }
+  .badge-dot { width: 8px; height: 8px; border-radius: 50%; position: absolute; top: -2px; right: -2px; }
+  .phone-body { padding: 0 16px 80px; }
+  .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 64px; background: #fff; border-top: 1px solid #eee; display: flex; align-items: center; justify-content: space-around; padding: 0 8px; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: #999; cursor: default; }
+  .nav-item .nav-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; }
+  .nav-item.active { color: #41703f; font-weight: 600; }
+
+  .screen-label { text-align: center; padding: 4px 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #999; border-bottom: 1px solid #eee; margin-bottom: 12px; }
+
+  /* --- Direction A: Green Impact --- */
+  .dir-a .nav-item.active { color: #41703f; }
+  .dir-a .btn-primary { background: #41703f; color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 600; width: 100%; cursor: default; }
+  .dir-a .btn-secondary { background: #e8f0e8; color: #41703f; border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 500; width: 100%; cursor: default; }
+  .dir-a .hero-card { background: linear-gradient(135deg, #41703f 0%, #2a4f28 100%); color: #fff; border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .dir-a .hero-card h3 { font-size: 18px; margin-bottom: 4px; }
+  .dir-a .hero-card p { font-size: 13px; opacity: .85; margin-bottom: 12px; }
+  .dir-a .hero-card .maps-btn { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+  .dir-a .progress-ring { width: 56px; height: 56px; border-radius: 50%; border: 4px solid rgba(255,255,255,.3); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; position: relative; }
+  .dir-a .progress-ring::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 4px solid #ffe10f; clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 85% 50%, 85% 15%, 50% 15%, 50% 50%); }
+  .dir-a .impact-banner { background: #e8f0e8; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .dir-a .impact-banner .num { font-size: 24px; font-weight: 700; color: #41703f; }
+  .dir-a .impact-banner .label { font-size: 12px; color: #5c5c5c; }
+  .dir-a .section-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #1a1a1a; }
+  .dir-a .slot-card { border: 1px solid #e0e0e0; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .dir-a .slot-card .day { font-weight: 600; font-size: 14px; }
+  .dir-a .slot-card .detail { font-size: 12px; color: #5c5c5c; }
+  .dir-a .slot-card .status { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 12px; }
+  .dir-a .status-avail { background: #e8f0e8; color: #41703f; }
+  .dir-a .status-booked { background: #fff3d6; color: #b8941e; }
+
+  /* --- Direction B: Warm Community --- */
+  .dir-b .nav-item.active { color: #dbb539; }
+  .dir-b .btn-primary { background: #dbb539; color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 600; width: 100%; cursor: default; }
+  .dir-b .btn-secondary { background: #faf3e0; color: #b8941e; border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 500; width: 100%; cursor: default; }
+  .dir-b .hero-card { background: linear-gradient(135deg, #dbb539 0%, #c9a230 100%); color: #fff; border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .dir-b .hero-card h3 { font-size: 18px; margin-bottom: 4px; }
+  .dir-b .hero-card p { font-size: 13px; opacity: .85; margin-bottom: 12px; }
+  .dir-b .hero-card .maps-btn { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+  .dir-b .progress-ring { width: 56px; height: 56px; border-radius: 50%; border: 4px solid rgba(255,255,255,.3); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; position: relative; }
+  .dir-b .progress-ring::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 4px solid #41703f; clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 85% 50%, 85% 15%, 50% 15%, 50% 50%); }
+  .dir-b .community-banner { background: #faf3e0; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; }
+  .dir-b .community-banner .stat-row { display: flex; gap: 16px; }
+  .dir-b .community-banner .stat { text-align: center; }
+  .dir-b .community-banner .num { font-size: 20px; font-weight: 700; color: #dbb539; }
+  .dir-b .community-banner .label { font-size: 11px; color: #5c5c5c; }
+  .dir-b .section-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #1a1a1a; }
+  .dir-b .slot-card { border: 1px solid #e0e0e0; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+  .dir-b .slot-card .day { font-weight: 600; font-size: 14px; }
+  .dir-b .slot-card .detail { font-size: 12px; color: #5c5c5c; }
+  .dir-b .slot-card .status { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 12px; }
+  .dir-b .status-avail { background: #faf3e0; color: #b8941e; }
+  .dir-b .status-booked { background: #e8f0e8; color: #41703f; }
+  .dir-b .welcome-msg { font-size: 13px; color: #5c5c5c; margin-bottom: 12px; padding: 8px 12px; background: #faf3e0; border-radius: 8px; text-align: center; }
+
+  /* --- Direction C: Clean Minimal --- */
+  .dir-c .nav-item.active { color: #41703f; }
+  .dir-c .btn-primary { background: #41703f; color: #fff; border: none; border-radius: 24px; padding: 10px 20px; font-size: 14px; font-weight: 600; width: 100%; cursor: default; transition: all .2s; }
+  .dir-c .btn-secondary { background: #fff; color: #41703f; border: 1px solid #41703f; border-radius: 24px; padding: 10px 20px; font-size: 14px; font-weight: 500; width: 100%; cursor: default; }
+  .dir-c .hero-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 24px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.04); }
+  .dir-c .hero-card h3 { font-size: 18px; margin-bottom: 4px; color: #1a1a1a; }
+  .dir-c .hero-card p { font-size: 13px; color: #5c5c5c; margin-bottom: 16px; }
+  .dir-c .hero-card .maps-btn { background: #41703f; color: #fff; border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+  .dir-c .progress-ring { width: 48px; height: 48px; border-radius: 50%; border: 3px solid #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #41703f; position: relative; }
+  .dir-c .progress-ring::before { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid #41703f; clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 85% 50%, 85% 15%, 50% 15%, 50% 50%); }
+  .dir-c .divider { height: 1px; background: #eee; margin: 16px 0; }
+  .dir-c .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: #999; margin-bottom: 10px; }
+  .dir-c .slot-card { border: 1px solid #eee; border-radius: 16px; padding: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
+  .dir-c .slot-card .day { font-weight: 600; font-size: 14px; color: #1a1a1a; }
+  .dir-c .slot-card .detail { font-size: 12px; color: #5c5c5c; }
+  .dir-c .slot-card .status { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; }
+  .dir-c .status-avail { background: #e8f0e8; color: #41703f; }
+  .dir-c .status-booked { background: #e0e0e0; color: #5c5c5c; }
+
+  /* Screens */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .direction { display: none; }
+  .direction.active { display: flex; }
+
+  .legend { max-width: 1140px; margin: 0 auto; padding: 0 24px 32px; }
+  .legend h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #5c5c5c; }
+  .legend-items { display: flex; gap: 20px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5c5c5c; }
+  .legend-color { width: 14px; height: 14px; border-radius: 4px; }
+
+  /* Tags */
+  .dir-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .dir-tag-a { background: #e8f0e8; color: #41703f; }
+  .dir-tag-b { background: #faf3e0; color: #b8941e; }
+  .dir-tag-c { background: #f0f0f0; color: #5c5c5c; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div><h1>punto-zero</h1><div class="subtitle">UX Design Directions</div></div>
+  <div style="display:flex;gap:8px;align-items:center;font-size:13px;color:#5c5c5c;">
+    <span class="dir-tag dir-tag-a">A · Green Impact</span>
+    <span class="dir-tag dir-tag-b">B · Warm Community</span>
+    <span class="dir-tag dir-tag-c">C · Clean Minimal</span>
+  </div>
+</div>
+
+<div class="tabs" id="screenTabs">
+  <div class="tab active" data-screen="dashboard">Saturday Dashboard</div>
+  <div class="tab" data-screen="agenda">Agenda</div>
+  <div class="tab" data-screen="turnos">Mis Turnos</div>
+  <div class="tab" data-screen="certificados">Certificados</div>
+  <div class="tab" data-screen="perfil">Perfil</div>
+</div>
+
+<div class="direction-tabs" id="directionTabs">
+  <div class="dir-tab active" data-dir="a">A · Green Impact</div>
+  <div class="dir-tab" data-dir="b">B · Warm Community</div>
+  <div class="dir-tab" data-dir="c">C · Clean Minimal</div>
+</div>
+
+<div class="showcase" id="showcase">
+
+  <!-- ====== Direction A: Green Impact ====== -->
+  <div class="direction active" data-dir="a">
+    <!-- Dashboard -->
+    <div class="phone dir-a screen active" data-screen="dashboard">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2 style="color:#1a1a1a;">Hoy es sábado</h2>
+        <div class="icon-row">
+          <div class="icon"><span>&#9830;</span><span class="badge-dot" style="background:#ffe10f;"></span></div>
+          <div class="progress-ring">3</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Saturday Dashboard</div>
+        <div class="hero-card">
+          <h3>Participas en:</h3>
+          <p style="font-size:20px;font-weight:700;margin-bottom:2px;">Punto Centro</p>
+          <p style="font-size:14px;opacity:.9;margin-bottom:16px;">Colonia Centro · 8:00am - 2:00pm</p>
+          <span class="maps-btn">&#128205; Abrir en Maps</span>
+          <div style="margin-top:12px;font-size:12px;opacity:.7;">Asistencia se confirmará a las 2:00pm</div>
+        </div>
+        <div class="impact-banner">
+          <div class="num">3/6</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sábados completados</div>
+            <div style="font-size:12px;color:#5c5c5c;">3 más para tu exención</div>
+          </div>
+        </div>
+        <div class="section-title">Próximos turnos</div>
+        <div class="slot-card">
+          <div>
+            <div class="day">Sábado 13 de junio</div>
+            <div class="detail">Punto Centro · 8:00am</div>
+          </div>
+          <span class="status status-booked">Agendado</span>
+        </div>
+        <div class="slot-card">
+          <div>
+            <div class="day">Sábado 20 de junio</div>
+            <div class="detail">Punto Norte · 8:00am</div>
+          </div>
+          <span class="status status-avail">Disponible</span>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item active"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Agenda -->
+    <div class="phone dir-a screen" data-screen="agenda">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Agenda</h2>
+        <div class="icon-row">
+          <div class="icon"><span>&#9830;</span></div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Agenda</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="background:#e0e0e0;padding:6px 12px;border-radius:16px;font-size:12px;">Colonia &#9660;</span>
+          <span style="background:#e0e0e0;padding:6px 12px;border-radius:16px;font-size:12px;">Punto &#9660;</span>
+          <span style="background:#41703f;color:#fff;padding:6px 12px;border-radius:16px;font-size:12px;">Solo con cupo</span>
+        </div>
+        <div style="font-size:11px;color:#999;margin-bottom:8px;">JUNIO 2026</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;">
+          <div style="border:2px solid #41703f;border-radius:10px;padding:12px;text-align:center;background:#e8f0e8;">
+            <div style="font-weight:600;">Sáb 6</div>
+            <div style="font-size:11px;color:#41703f;">3 cupos</div>
+          </div>
+          <div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-weight:600;">Sáb 13</div>
+            <div style="font-size:11px;color:#5c5c5c;">Completo</div>
+          </div>
+          <div style="border:2px solid #41703f;border-radius:10px;padding:12px;text-align:center;background:#e8f0e8;">
+            <div style="font-weight:600;">Sáb 20</div>
+            <div style="font-size:11px;color:#41703f;">5 cupos</div>
+          </div>
+          <div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px;text-align:center;opacity:.5;">
+            <div style="font-weight:600;">Sáb 27</div>
+            <div style="font-size:11px;color:#999;">Vence viernes</div>
+          </div>
+        </div>
+        <div class="section-title">Punto Centro · Sábado 6</div>
+        <div class="slot-card" style="border-left:3px solid #41703f;">
+          <div>
+            <div class="day">8:00am - 10:00am</div>
+            <div class="detail">3 cupos disponibles</div>
+          </div>
+          <span class="status status-avail">Agendar</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #41703f;">
+          <div>
+            <div class="day">10:00am - 12:00pm</div>
+            <div class="detail">2 cupos disponibles</div>
+          </div>
+          <span class="status status-avail">Agendar</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #e0e0e0;opacity:.6;">
+          <div>
+            <div class="day">12:00pm - 2:00pm</div>
+            <div class="detail">Completo</div>
+          </div>
+          <span class="status status-booked">Lleno</span>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item active"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Mis Turnos -->
+    <div class="phone dir-a screen" data-screen="turnos">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Mis Turnos</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Mis Turnos</div>
+        <div class="slot-card" style="border-left:3px solid #41703f;">
+          <div>
+            <div class="day">Sábado 6 de junio</div>
+            <div class="detail">Punto Centro · 8:00am - 10:00am</div>
+          </div>
+          <span class="status status-booked" style="background:#41703f;color:#fff;">Confirmado</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #ffe10f;">
+          <div>
+            <div class="day">Sábado 30 de mayo</div>
+            <div class="detail">Punto Norte · 10:00am - 12:00pm</div>
+          </div>
+          <span class="status status-booked" style="background:#789b3d;color:#fff;">Asistí</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #789b3d;">
+          <div>
+            <div class="day">Sábado 23 de mayo</div>
+            <div class="detail">Punto Centro · 8:00am - 10:00am</div>
+          </div>
+          <span class="status status-booked" style="background:#789b3d;color:#fff;">Asistí</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #e0e0e0;opacity:.7;">
+          <div>
+            <div class="day">Sábado 16 de mayo</div>
+            <div class="detail">Punto Centro · 8:00am - 10:00am</div>
+          </div>
+          <span class="status" style="background:#ffe10f;color:#1a1a1a;">Falta</span>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item active"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Certificados -->
+    <div class="phone dir-a screen" data-screen="certificados">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Certificados</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Certificados</div>
+        <div style="border:2px solid #41703f;border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;background:linear-gradient(135deg,#fff 0%,#e8f0e8 100%);">
+          <div style="font-size:12px;color:#41703f;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Exención Vigente</div>
+          <div style="width:120px;height:120px;margin:0 auto 12px;background:#fff;border:2px solid #41703f;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;flex-direction:column;">
+            <div style="font-size:36px;color:#41703f;font-weight:700;">QR</div>
+            <div style="font-size:9px;">EXENCIÓN</div>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;">Vence: 30 de mayo 2027</div>
+          <div style="font-size:12px;color:#5c5c5c;margin-top:4px;">Exento de cuotas por 1 año</div>
+        </div>
+        <div class="section-title">Reconocimientos</div>
+        <div style="border:1px solid #e0e0e0;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;opacity:.8;">
+          <div style="width:48px;height:48px;border:1px solid #dbb539;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#dbb539;font-weight:600;">QR</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">Reconocimiento #2</div>
+            <div style="font-size:12px;color:#5c5c5c;">6 asistencias · mayo 2026</div>
+          </div>
+        </div>
+        <div style="border:1px solid #e0e0e0;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;opacity:.8;">
+          <div style="width:48px;height:48px;border:1px solid #dbb539;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#dbb539;font-weight:600;">QR</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">Reconocimiento #1</div>
+            <div style="font-size:12px;color:#5c5c5c;">6 asistencias · noviembre 2025</div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item active"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Perfil -->
+    <div class="phone dir-a screen" data-screen="perfil">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Perfil</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Perfil</div>
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="width:64px;height:64px;border-radius:50%;background:#41703f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin:0 auto 8px;">O</div>
+          <div style="font-weight:700;font-size:18px;">Oscar R.</div>
+          <div style="font-size:13px;color:#5c5c5c;">Voluntario desde mayo 2025</div>
+        </div>
+        <div style="background:#e8f0e8;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;justify-content:space-between;">
+          <div style="text-align:center;"><div style="font-weight:700;font-size:18px;color:#41703f;">15</div><div style="font-size:11px;color:#5c5c5c;">Sábados</div></div>
+          <div style="text-align:center;"><div style="font-weight:700;font-size:18px;color:#41703f;">3</div><div style="font-size:11px;color:#5c5c5c;">Faltas</div></div>
+          <div style="text-align:center;"><div style="font-weight:700;font-size:18px;color:#41703f;">2</div><div style="font-size:11px;color:#5c5c5c;">Certificados</div></div>
+        </div>
+        <div style="border-top:1px solid #eee;padding-top:12px;">
+          <div style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;justify-content:space-between;">
+            <span>Estatus</span><span style="color:#41703f;font-weight:600;">Alta</span>
+          </div>
+          <div style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;justify-content:space-between;">
+            <span>Teléfono</span><span style="color:#5c5c5c;">*** *** 1234</span>
+          </div>
+          <div style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;justify-content:space-between;">
+            <span>Edad</span><span style="color:#5c5c5c;">30-39</span>
+          </div>
+          <div style="padding:10px 0;font-size:14px;display:flex;justify-content:space-between;">
+            <span>WhatsApp</span><span style="color:#41703f;">Unido</span>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item active"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== Direction B: Warm Community ====== -->
+  <div class="direction" data-dir="b">
+    <!-- Dashboard -->
+    <div class="phone dir-b screen active" data-screen="dashboard">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2 style="color:#1a1a1a;">¡Hoy es sábado!</h2>
+        <div class="icon-row">
+          <div class="icon"><span>&#9830;</span><span class="badge-dot" style="background:#41703f;"></span></div>
+          <div class="progress-ring">3</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Saturday Dashboard</div>
+        <div class="welcome-msg">&#127754; 342 voluntarios participan esta semana</div>
+        <div class="hero-card">
+          <h3>Te esperamos en:</h3>
+          <p style="font-size:20px;font-weight:700;margin-bottom:2px;">Punto Centro</p>
+          <p style="font-size:14px;opacity:.9;margin-bottom:16px;">Colonia Centro · 8:00am - 2:00pm</p>
+          <span class="maps-btn">&#128205; Abrir en Maps</span>
+          <div style="margin-top:12px;font-size:12px;opacity:.7;">Asistencia se confirmará a las 2:00pm</div>
+        </div>
+        <div class="community-banner">
+          <div class="stat-row">
+            <div class="stat"><div class="num">3/6</div><div class="label">Completados</div></div>
+            <div class="stat"><div class="num">15</div><div class="label">Sábados totales</div></div>
+            <div class="stat"><div class="num">2</div><div class="label">Certificados</div></div>
+          </div>
+        </div>
+        <div class="section-title">Próximos turnos</div>
+        <div class="slot-card">
+          <div>
+            <div class="day">Sábado 13 de junio</div>
+            <div class="detail">Punto Centro · 8:00am</div>
+          </div>
+          <span class="status status-booked">Agendado</span>
+        </div>
+        <div class="slot-card">
+          <div>
+            <div class="day">Sábado 20 de junio</div>
+            <div class="detail">Punto Norte · 8:00am</div>
+          </div>
+          <span class="status status-avail">Disponible</span>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item active"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Agenda -->
+    <div class="phone dir-b screen" data-screen="agenda">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Agenda</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Agenda</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="background:#e0e0e0;padding:6px 12px;border-radius:16px;font-size:12px;">Colonia &#9660;</span>
+          <span style="background:#e0e0e0;padding:6px 12px;border-radius:16px;font-size:12px;">Punto &#9660;</span>
+          <span style="background:#dbb539;color:#fff;padding:6px 12px;border-radius:16px;font-size:12px;">Solo con cupo</span>
+        </div>
+        <div style="font-size:11px;color:#999;margin-bottom:8px;">JUNIO 2026</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;">
+          <div style="border:2px solid #dbb539;border-radius:10px;padding:12px;text-align:center;background:#faf3e0;">
+            <div style="font-weight:600;">Sáb 6</div>
+            <div style="font-size:11px;color:#b8941e;">3 cupos</div>
+          </div>
+          <div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-weight:600;">Sáb 13</div>
+            <div style="font-size:11px;color:#5c5c5c;">Completo</div>
+          </div>
+          <div style="border:2px solid #dbb539;border-radius:10px;padding:12px;text-align:center;background:#faf3e0;">
+            <div style="font-weight:600;">Sáb 20</div>
+            <div style="font-size:11px;color:#b8941e;">5 cupos</div>
+          </div>
+          <div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px;text-align:center;opacity:.5;">
+            <div style="font-weight:600;">Sáb 27</div>
+            <div style="font-size:11px;color:#999;">Vence viernes</div>
+          </div>
+        </div>
+        <div class="section-title">Punto Centro · Sábado 6</div>
+        <div class="slot-card" style="border-left:3px solid #dbb539;">
+          <div>
+            <div class="day">8:00am - 10:00am</div>
+            <div class="detail">3 cupos disponibles</div>
+          </div>
+          <span class="status status-avail">Agendar</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #dbb539;">
+          <div>
+            <div class="day">10:00am - 12:00pm</div>
+            <div class="detail">2 cupos disponibles</div>
+          </div>
+          <span class="status status-avail">Agendar</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #e0e0e0;opacity:.6;">
+          <div>
+            <div class="day">12:00pm - 2:00pm</div>
+            <div class="detail">Completo</div>
+          </div>
+          <span class="status status-booked">Lleno</span>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item active"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Turnos -->
+    <div class="phone dir-b screen" data-screen="turnos">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Mis Turnos</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Mis Turnos</div>
+        <div class="slot-card" style="border-left:3px solid #dbb539;">
+          <div>
+            <div class="day">Sábado 6 de junio</div>
+            <div class="detail">Punto Centro · 8:00am - 10:00am</div>
+          </div>
+          <span class="status status-booked" style="background:#dbb539;color:#fff;">Confirmado</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #789b3d;">
+          <div>
+            <div class="day">Sábado 30 de mayo</div>
+            <div class="detail">Punto Norte · 10:00am - 12:00pm</div>
+          </div>
+          <span class="status status-booked" style="background:#789b3d;color:#fff;">Asistí</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #789b3d;">
+          <div>
+            <div class="day">Sábado 23 de mayo</div>
+            <div class="detail">Punto Centro · 8:00am - 10:00am</div>
+          </div>
+          <span class="status status-booked" style="background:#789b3d;color:#fff;">Asistí</span>
+        </div>
+        <div class="slot-card" style="border-left:3px solid #e0e0e0;opacity:.7;">
+          <div>
+            <div class="day">Sábado 16 de mayo</div>
+            <div class="detail">Punto Centro · 8:00am - 10:00am</div>
+          </div>
+          <span class="status" style="background:#ffe10f;color:#1a1a1a;">Falta</span>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item active"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Certificados -->
+    <div class="phone dir-b screen" data-screen="certificados">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Certificados</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Certificados</div>
+        <div style="border:2px solid #dbb539;border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;background:linear-gradient(135deg,#fff 0%,#faf3e0 100%);">
+          <div style="font-size:12px;color:#b8941e;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Exención Vigente</div>
+          <div style="width:120px;height:120px;margin:0 auto 12px;background:#fff;border:2px solid #dbb539;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;flex-direction:column;">
+            <div style="font-size:36px;color:#dbb539;font-weight:700;">QR</div>
+            <div style="font-size:9px;">EXENCIÓN</div>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;">Vence: 30 de mayo 2027</div>
+          <div style="font-size:12px;color:#5c5c5c;margin-top:4px;">Exento de cuotas por 1 año</div>
+        </div>
+        <div class="section-title">Reconocimientos</div>
+        <div style="border:1px solid #e0e0e0;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;opacity:.8;">
+          <div style="width:48px;height:48px;border:1px solid #789b3d;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#789b3d;font-weight:600;">QR</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">Reconocimiento #2</div>
+            <div style="font-size:12px;color:#5c5c5c;">6 asistencias · mayo 2026</div>
+          </div>
+        </div>
+        <div style="border:1px solid #e0e0e0;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;opacity:.8;">
+          <div style="width:48px;height:48px;border:1px solid #789b3d;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#789b3d;font-weight:600;">QR</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">Reconocimiento #1</div>
+            <div style="font-size:12px;color:#5c5c5c;">6 asistencias · noviembre 2025</div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item active"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Perfil -->
+    <div class="phone dir-b screen" data-screen="perfil">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Perfil</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Perfil</div>
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="width:64px;height:64px;border-radius:50%;background:#dbb539;color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin:0 auto 8px;">O</div>
+          <div style="font-weight:700;font-size:18px;">Oscar R.</div>
+          <div style="font-size:13px;color:#5c5c5c;">Voluntario desde mayo 2025</div>
+        </div>
+        <div style="background:#faf3e0;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;justify-content:space-between;">
+          <div style="text-align:center;"><div style="font-weight:700;font-size:18px;color:#b8941e;">15</div><div style="font-size:11px;color:#5c5c5c;">Sábados</div></div>
+          <div style="text-align:center;"><div style="font-weight:700;font-size:18px;color:#b8941e;">3</div><div style="font-size:11px;color:#5c5c5c;">Faltas</div></div>
+          <div style="text-align:center;"><div style="font-weight:700;font-size:18px;color:#b8941e;">2</div><div style="font-size:11px;color:#5c5c5c;">Certificados</div></div>
+        </div>
+        <div style="border-top:1px solid #eee;padding-top:12px;">
+          <div style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;justify-content:space-between;">
+            <span>Estatus</span><span style="color:#41703f;font-weight:600;">Alta</span>
+          </div>
+          <div style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;justify-content:space-between;">
+            <span>Teléfono</span><span style="color:#5c5c5c;">*** *** 1234</span>
+          </div>
+          <div style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;justify-content:space-between;">
+            <span>Edad</span><span style="color:#5c5c5c;">30-39</span>
+          </div>
+          <div style="padding:10px 0;font-size:14px;display:flex;justify-content:space-between;">
+            <span>WhatsApp</span><span style="color:#41703f;">Unido</span>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item active"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== Direction C: Clean Minimal ====== -->
+  <div class="direction" data-dir="c">
+    <!-- Dashboard -->
+    <div class="phone dir-c screen active" data-screen="dashboard">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2 style="color:#1a1a1a;">Sábado 6 de junio</h2>
+        <div class="icon-row">
+          <div class="icon"><span>&#9830;</span><span class="badge-dot" style="background:#41703f;"></span></div>
+          <div class="progress-ring">3</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Saturday Dashboard</div>
+        <div class="hero-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <h3>Participas hoy</h3>
+              <p style="font-size:20px;font-weight:700;color:#1a1a1a;margin-top:4px;">Punto Centro</p>
+              <p style="font-size:13px;color:#5c5c5c;">Colonia Centro · 8:00am - 2:00pm</p>
+            </div>
+          </div>
+          <div style="margin-top:16px;">
+            <span class="maps-btn">&#128205; Abrir en Maps</span>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:#999;">Asistencia se confirmará a las 2:00pm</div>
+        </div>
+        <div class="divider"></div>
+        <div class="section-title">Progreso</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="flex:1;height:6px;background:#eee;border-radius:3px;overflow:hidden;">
+            <div style="width:50%;height:100%;background:#41703f;border-radius:3px;"></div>
+          </div>
+          <span style="font-weight:700;font-size:16px;color:#41703f;">3/6</span>
+          <span style="font-size:12px;color:#5c5c5c;">3 más para exención</span>
+        </div>
+        <div class="divider"></div>
+        <div class="section-title">Próximos turnos</div>
+        <div class="slot-card">
+          <div>
+            <div class="day">Sábado 13 de junio</div>
+            <div class="detail">Punto Centro · 8:00am</div>
+          </div>
+          <span class="status status-booked">Agendado</span>
+        </div>
+        <div class="slot-card">
+          <div>
+            <div class="day">Sábado 20 de junio</div>
+            <div class="detail">Punto Norte · 8:00am</div>
+          </div>
+          <span class="status status-avail">Disponible</span>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item active"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Agenda -->
+    <div class="phone dir-c screen" data-screen="agenda">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Agenda</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Agenda</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+          <span style="border:1px solid #ddd;padding:6px 14px;border-radius:20px;font-size:12px;">Colonia &#9660;</span>
+          <span style="border:1px solid #ddd;padding:6px 14px;border-radius:20px;font-size:12px;">Punto &#9660;</span>
+          <span style="background:#41703f;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;">Solo con cupo</span>
+        </div>
+        <div class="section-title">Próximos sábados</div>
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+          <div style="flex:1;border:2px solid #41703f;border-radius:12px;padding:10px;text-align:center;">
+            <div style="font-size:11px;color:#999;">SÁB 6</div>
+            <div style="font-weight:700;font-size:16px;color:#41703f;">3</div>
+            <div style="font-size:10px;color:#41703f;">cupos</div>
+          </div>
+          <div style="flex:1;border:1px solid #e0e0e0;border-radius:12px;padding:10px;text-align:center;opacity:.5;">
+            <div style="font-size:11px;color:#999;">SÁB 13</div>
+            <div style="font-weight:700;font-size:16px;color:#999;">—</div>
+            <div style="font-size:10px;color:#999;">lleno</div>
+          </div>
+          <div style="flex:1;border:2px solid #41703f;border-radius:12px;padding:10px;text-align:center;">
+            <div style="font-size:11px;color:#999;">SÁB 20</div>
+            <div style="font-weight:700;font-size:16px;color:#41703f;">5</div>
+            <div style="font-size:10px;color:#41703f;">cupos</div>
+          </div>
+          <div style="flex:1;border:1px solid #e0e0e0;border-radius:12px;padding:10px;text-align:center;opacity:.3;">
+            <div style="font-size:11px;color:#999;">SÁB 27</div>
+            <div style="font-weight:700;font-size:16px;color:#999;">?</div>
+            <div style="font-size:10px;color:#999;">—</div>
+          </div>
+        </div>
+        <div class="section-title">Punto Centro · Sábado 6</div>
+        <div class="slot-card" style="border-left:0;">
+          <div>
+            <div class="day">8:00am - 10:00am</div>
+            <div class="detail">3 cupos</div>
+          </div>
+          <span class="status status-avail">Agendar</span>
+        </div>
+        <div class="slot-card" style="border-left:0;">
+          <div>
+            <div class="day">10:00am - 12:00pm</div>
+            <div class="detail">2 cupos</div>
+          </div>
+          <span class="status status-avail">Agendar</span>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item active"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Turnos -->
+    <div class="phone dir-c screen" data-screen="turnos">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Mis Turnos</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Mis Turnos</div>
+        <div class="slot-card" style="border-left:0;background:#fff;border:2px solid #41703f;">
+          <div>
+            <div class="day">Sábado 6 de junio</div>
+            <div class="detail">Punto Centro · 8:00am - 10:00am</div>
+          </div>
+          <span class="status" style="background:#41703f;color:#fff;border-radius:20px;">Confirmado</span>
+        </div>
+        <div class="slot-card" style="border-left:0;">
+          <div>
+            <div class="day">Sábado 30 de mayo</div>
+            <div class="detail">Punto Norte · 10:00am - 12:00pm</div>
+          </div>
+          <span class="status" style="background:#789b3d;color:#fff;border-radius:20px;">Asistí</span>
+        </div>
+        <div class="slot-card" style="border-left:0;">
+          <div>
+            <div class="day">Sábado 23 de mayo</div>
+            <div class="detail">Punto Centro · 8:00am - 10:00am</div>
+          </div>
+          <span class="status" style="background:#789b3d;color:#fff;border-radius:20px;">Asistí</span>
+        </div>
+        <div class="slot-card" style="border-left:0;opacity:.7;">
+          <div>
+            <div class="day">Sábado 16 de mayo</div>
+            <div class="detail">Punto Centro · 8:00am - 10:00am</div>
+          </div>
+          <span class="status" style="background:#ffe10f;color:#1a1a1a;border-radius:20px;">Falta</span>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item active"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Certificados -->
+    <div class="phone dir-c screen" data-screen="certificados">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Certificados</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Certificados</div>
+        <div style="border-radius:20px;padding:24px;text-align:center;margin-bottom:16px;background:#fafafa;border:1px solid #e0e0e0;">
+          <div style="font-size:11px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Exención Vigente</div>
+          <div style="width:120px;height:120px;margin:0 auto 12px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+            <div style="font-size:36px;color:#41703f;font-weight:700;">QR</div>
+            <div style="font-size:9px;">EXENCIÓN</div>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;">Vence: 30 de mayo 2027</div>
+          <div style="font-size:12px;color:#5c5c5c;margin-top:4px;">Exento de cuotas por 1 año</div>
+        </div>
+        <div class="section-title">Reconocimientos</div>
+        <div style="border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;background:#fafafa;border:1px solid #eee;opacity:.8;">
+          <div style="width:48px;height:48px;border-radius:8px;background:#fff;border:1px solid #dbb539;display:flex;align-items:center;justify-content:center;font-size:10px;color:#dbb539;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.04);">QR</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">Reconocimiento #2</div>
+            <div style="font-size:12px;color:#5c5c5c;">6 asistencias · mayo 2026</div>
+          </div>
+        </div>
+        <div style="border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;background:#fafafa;border:1px solid #eee;opacity:.8;">
+          <div style="width:48px;height:48px;border-radius:8px;background:#fff;border:1px solid #dbb539;display:flex;align-items:center;justify-content:center;font-size:10px;color:#dbb539;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.04);">QR</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">Reconocimiento #1</div>
+            <div style="font-size:12px;color:#5c5c5c;">6 asistencias · noviembre 2025</div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item active"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- Perfil -->
+    <div class="phone dir-c screen" data-screen="perfil">
+      <div class="phone-notch"><span></span></div>
+      <div class="phone-header">
+        <h2>Perfil</h2>
+        <div class="icon-row"><div class="icon"><span>&#9830;</span></div></div>
+      </div>
+      <div class="phone-body">
+        <div class="screen-label">Perfil</div>
+        <div style="text-align:center;margin-bottom:24px;">
+          <div style="width:72px;height:72px;border-radius:50%;background:#f0f0f0;color:#41703f;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;margin:0 auto 8px;border:2px solid #41703f;">O</div>
+          <div style="font-weight:700;font-size:18px;">Oscar R.</div>
+          <div style="font-size:13px;color:#5c5c5c;">Voluntario desde mayo 2025</div>
+        </div>
+        <div style="border-radius:16px;background:#fafafa;padding:16px;margin-bottom:16px;border:1px solid #eee;">
+          <div style="display:flex;justify-content:space-around;text-align:center;">
+            <div><div style="font-weight:700;font-size:20px;color:#41703f;">15</div><div style="font-size:11px;color:#999;">Sábados</div></div>
+            <div><div style="font-weight:700;font-size:20px;color:#41703f;">3</div><div style="font-size:11px;color:#999;">Faltas</div></div>
+            <div><div style="font-weight:700;font-size:20px;color:#41703f;">2</div><div style="font-size:11px;color:#999;">Certificados</div></div>
+          </div>
+        </div>
+        <div style="border-top:1px solid #eee;padding-top:12px;">
+          <div style="padding:14px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;justify-content:space-between;">
+            <span style="color:#5c5c5c;">Estatus</span><span style="color:#41703f;font-weight:600;">Alta</span>
+          </div>
+          <div style="padding:14px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;justify-content:space-between;">
+            <span style="color:#5c5c5c;">Teléfono</span><span style="color:#1a1a1a;">*** *** 1234</span>
+          </div>
+          <div style="padding:14px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;justify-content:space-between;">
+            <span style="color:#5c5c5c;">Edad</span><span style="color:#1a1a1a;">30-39</span>
+          </div>
+          <div style="padding:14px 0;font-size:14px;display:flex;justify-content:space-between;">
+            <span style="color:#5c5c5c;">WhatsApp</span><span style="color:#41703f;">Unido</span>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><span class="nav-icon">&#127968;</span>Inicio</div>
+        <div class="nav-item"><span class="nav-icon">&#128197;</span>Agenda</div>
+        <div class="nav-item"><span class="nav-icon">&#9981;</span>Turnos</div>
+        <div class="nav-item"><span class="nav-icon">&#128196;</span>Certificados</div>
+        <div class="nav-item active"><span class="nav-icon">&#128100;</span>Perfil</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <h3>Qué explorar en cada dirección:</h3>
+  <div class="legend-items">
+    <div class="legend-item"><div class="legend-color" style="background:#41703f;"></div> A: Verde dominante, impacto ambiental visible, eco-conscious</div>
+    <div class="legend-item"><div class="legend-color" style="background:#dbb539;"></div> B: Dorado como acento principal, calidez comunitaria, pertenencia</div>
+    <div class="legend-item"><div class="legend-color" style="background:#e0e0e0;"></div> C: Blanco dominante, minimalista, limpio, tipo producto</div>
+  </div>
+  <div style="margin-top:8px;font-size:12px;color:#999;">
+    Abre este archivo en tu navegador. Usa las pestañas superiores para cambiar entre direcciones y las pestañas inferiores para ver diferentes pantallas.
+  </div>
+</div>
+
+<script>
+  const screenTabs = document.querySelectorAll('#screenTabs .tab');
+  const dirTabs = document.querySelectorAll('#directionTabs .dir-tab');
+  const directions = document.querySelectorAll('.direction');
+
+  screenTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const screen = tab.dataset.screen;
+      screenTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.screen').forEach(s => {
+        s.classList.toggle('active', s.dataset.screen === screen);
+      });
+    });
+  });
+
+  dirTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const dir = tab.dataset.dir;
+      dirTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      directions.forEach(d => {
+        d.classList.toggle('active', d.dataset.dir === dir);
+      });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+        working-directory: client
+      - run: npx eslint src/ --max-warnings=0
+        working-directory: client
+        continue-on-error: true
+
+  build-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+        working-directory: client
+      - run: npm run build
+        working-directory: client
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-dist
+          path: client/dist
+
+  build-server:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: puntozero
+          MYSQL_USER: puntozero
+          MYSQL_PASSWORD: puntozero
+        options: --health-cmd "mysqladmin ping -h localhost" --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 3306:3306
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+        working-directory: server
+      - run: npx prisma generate
+        working-directory: server
+        env:
+          DATABASE_URL: mysql://puntozero:puntozero@localhost:3306/puntozero
+      - run: npx prisma db push
+        working-directory: server
+        env:
+          DATABASE_URL: mysql://puntozero:puntozero@localhost:3306/puntozero
