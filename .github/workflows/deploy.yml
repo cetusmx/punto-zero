@@ -21,6 +21,6 @@ jobs:
           script: |
             cd /opt/punto-zero
             git pull origin main
-            docker compose pull
-            docker compose up -d --build
+            docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml pull
+            docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml up -d --build
             docker system prune -f
