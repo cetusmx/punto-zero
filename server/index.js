@@ -15,7 +15,7 @@ app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) }
 app.use(express.json());
 
 app.get('/api/v1/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
 });
 
 app.use(errorHandler);
