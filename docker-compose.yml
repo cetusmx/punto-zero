@@ -8,8 +8,6 @@ services:
       MYSQL_DATABASE: puntozero
       MYSQL_USER: puntozero
       MYSQL_PASSWORD: puntozero
-    ports:
-      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
