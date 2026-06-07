@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { register, verifyOtpHandler, resendOtp, login, forgotPassword, resetPassword } from '../controllers/auth-controller.js';
-import { registerRules, verifyOtpRules, resendOtpRules, loginRules, forgotPasswordRules, resetPasswordRules } from '../middleware/validate.js';
+import { register, verifyOtpHandler, resendOtp, login, forgotPassword, resetPassword, updateProfile } from '../controllers/auth-controller.js';
+import { registerRules, verifyOtpRules, resendOtpRules, loginRules, forgotPasswordRules, resetPasswordRules, updateProfileRules } from '../middleware/validate.js';
+import { authenticate } from '../../middleware/auth.js';
 
 const router = Router();
 
@@ -59,5 +60,6 @@ router.post('/verify-otp', verifyLimiter, verifyOtpRules, verifyOtpHandler);
 router.post('/resend-otp', resendLimiter, resendOtpRules, resendOtp);
 router.post('/forgot-password', forgotPasswordRules, forgotLimiter, forgotPassword);
 router.post('/reset-password', resetPasswordRules, resetLimiter, resetPassword);
+router.put('/profile', authenticate, updateProfileRules, updateProfile);
 
 export default router;

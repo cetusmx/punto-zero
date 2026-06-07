@@ -113,3 +113,26 @@ export const resetPasswordRules = [
 
   handleValidationErrors,
 ];
+
+export const updateProfileRules = [
+  body('gender')
+    .notEmpty().withMessage('El género es obligatorio')
+    .isIn(['Hombre', 'Mujer', 'Otro', 'Prefiero no decir']).withMessage('Género inválido'),
+
+  body('age')
+    .notEmpty().withMessage('El rango de edad es obligatorio')
+    .isIn(['<20', '20-29', '30-39', '40-49', '50-59', '60+', 'OTRA']).withMessage('Rango de edad inválido'),
+
+  body('esquema')
+    .notEmpty().withMessage('El esquema de participación es obligatorio')
+    .isIn(['Puntos de Acopio', 'Ruta en casa']).withMessage('Esquema inválido'),
+
+  body('residuo')
+    .notEmpty().withMessage('El tipo de residuo es obligatorio'),
+
+  body('frecuencia')
+    .notEmpty().withMessage('La frecuencia es obligatoria')
+    .isIn(['Semanal', 'Quincenal']).withMessage('Frecuencia inválida'),
+
+  handleValidationErrors,
+];

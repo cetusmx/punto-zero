@@ -79,7 +79,23 @@ export async function verifyOtpHandler(req, res, next) {
       { expiresIn: JWT_EXPIRY }
     );
 
-    res.json({ token, isFirstLogin: true, user: { id: user.id, name: user.name, phone: user.phone, email: user.email, role: user.role } });
+    res.json({ 
+      token, 
+      isFirstLogin: true, 
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        phone: user.phone, 
+        email: user.email, 
+        role: user.role,
+        gender: user.gender,
+        age: user.age,
+        esquema: user.esquema,
+        residuo: user.residuo,
+        frecuencia: user.frecuencia,
+        status: user.status,
+      } 
+    });
   } catch (err) {
     next(err);
   }
@@ -147,6 +163,12 @@ export async function login(req, res, next) {
         phone: user.phone,
         email: user.email,
         role: user.role,
+        gender: user.gender,
+        age: user.age,
+        esquema: user.esquema,
+        residuo: user.residuo,
+        frecuencia: user.frecuencia,
+        status: user.status,
       },
     });
   } catch (err) {
@@ -190,6 +212,44 @@ export async function resetPassword(req, res, next) {
     });
 
     res.json({ message: 'Contraseña actualizada exitosamente.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateProfile(req, res, next) {
+  try {
+    const { gender, age, esquema, residuo, frecuencia } = req.body;
+    const userId = req.user.id;
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        gender,
+        age,
+        esquema,
+        residuo,
+        frecuencia,
+        status: 'Alta',
+      },
+    });
+
+    res.json({
+      message: 'Perfil actualizado exitosamente.',
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
+        gender: user.gender,
+        age: user.age,
+        esquema: user.esquema,
+        residuo: user.residuo,
+        frecuencia: user.frecuencia,
+        status: user.status,
+      },
+    });
   } catch (err) {
     next(err);
   }

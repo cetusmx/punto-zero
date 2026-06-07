@@ -39,7 +39,7 @@ model User {
   status    UserStatus @default(Alta)
   access    UserAccess @default(Habilitado)
   gender    String?
-  age       Int?
+  age       String?
   esquema   String?
   residuo   String?
   frecuencia String?

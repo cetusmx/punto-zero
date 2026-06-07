@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { NotificationProvider } from './context/NotificationContext'
 import VolunteerLayout from './layouts/VolunteerLayout'
@@ -29,6 +29,20 @@ function PublicRoute({ children }) {
   return children
 }
 
+function ProfileGuard({ children }) {
+  const { user, isAuthenticated } = useAuth()
+  const location = useLocation()
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+
+  // If profile is incomplete and we are NOT already on the profile page, redirect
+  if (!user?.gender && location.pathname !== '/perfil') {
+    return <Navigate to="/perfil" replace />
+  }
+
+  return children
+}
+
 function AppRoutes() {
   const { isAuthenticated } = useAuth()
 
@@ -40,9 +54,9 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
       <Route path="/reset-password" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
       <Route path="/*" element={
-        isAuthenticated
-          ? <VolunteerLayout />
-          : <Navigate to="/login" replace />
+        <ProfileGuard>
+          <VolunteerLayout />
+        </ProfileGuard>
       } />
       <Route path="/admin/*" element={
         <ProtectedRoute>

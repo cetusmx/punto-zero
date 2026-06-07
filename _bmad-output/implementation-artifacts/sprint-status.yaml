@@ -56,7 +56,7 @@ development_status:
   2-1-user-registration-with-sms-otp: done
   2-2-login-with-unified-phone-email-field: done
   2-3-password-recovery-via-sms: done
-  2-4-mandatory-profile-form: backlog
+  2-4-mandatory-profile-form: done
   2-5-account-status-management-whatsapp-links: backlog
   epic-2-retrospective: optional
 

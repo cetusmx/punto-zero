@@ -32,10 +32,15 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  const updateUser = useCallback((userData) => {
+    localStorage.setItem('user', JSON.stringify(userData))
+    setUser(userData)
+  }, [])
+
   const isAuthenticated = !!token
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   )
