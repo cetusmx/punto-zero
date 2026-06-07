@@ -77,7 +77,7 @@ export default function LoginPage() {
       const { data } = await api.post('/auth/login', form)
       login(data.token, data.user)
       if (data.isFirstLogin) {
-        navigate('/profile', { replace: true })
+        navigate('/perfil', { replace: true })
       } else {
         navigate('/', { replace: true })
       }
@@ -101,7 +101,7 @@ export default function LoginPage() {
         punto-zero
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
-        Bienvenido de nuevo
+        Bienvenido de nuevo (v1.1)
       </Typography>
 
       <Card elevation={0} sx={{ 

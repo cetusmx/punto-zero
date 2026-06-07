@@ -125,7 +125,7 @@ export default function RegisterPage() {
         punto-zero
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
-        Únete a la comunidad de voluntarios
+        Únete a la comunidad de voluntarios (v1.1)
       </Typography>
 
       <Card elevation={0} sx={{ 

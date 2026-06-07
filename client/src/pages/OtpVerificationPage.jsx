@@ -84,7 +84,7 @@ export default function OtpVerificationPage() {
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      navigate('/profile', { replace: true })
+      navigate('/perfil', { replace: true })
     } catch (err) {
       const msg = err.response?.data?.error?.message || 'Error al verificar el código'
       setError(msg)
@@ -124,7 +124,7 @@ export default function OtpVerificationPage() {
         punto-zero
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
-        Verificación de identidad
+        Verificación de identidad (v1.1)
       </Typography>
 
       <Card elevation={0} sx={{ 
