@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { NotificationProvider } from './context/NotificationContext'
 import VolunteerLayout from './layouts/VolunteerLayout'
 import AdminLayout from './layouts/AdminLayout'
+import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import OtpVerificationPage from './pages/OtpVerificationPage'
 
@@ -10,7 +11,7 @@ function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
 
   if (!isAuthenticated) {
-    return <Navigate to="/register" replace />
+    return <Navigate to="/login" replace />
   }
 
   return children
@@ -31,12 +32,13 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       <Route path="/verify-otp" element={<PublicRoute><OtpVerificationPage /></PublicRoute>} />
       <Route path="/*" element={
         isAuthenticated
           ? <VolunteerLayout />
-          : <Navigate to="/register" replace />
+          : <Navigate to="/login" replace />
       } />
       <Route path="/admin/*" element={
         <ProtectedRoute>

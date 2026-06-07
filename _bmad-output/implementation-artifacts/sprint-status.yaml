@@ -54,7 +54,7 @@ development_status:
   # Epic 2: Volunteer Onboarding & Identity
   epic-2: in-progress
   2-1-user-registration-with-sms-otp: done
-  2-2-login-with-unified-phone-email-field: backlog
+  2-2-login-with-unified-phone-email-field: done
   2-3-password-recovery-via-sms: backlog
   2-4-mandatory-profile-form: backlog
   2-5-account-status-management-whatsapp-links: backlog

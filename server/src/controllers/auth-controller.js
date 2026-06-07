@@ -98,3 +98,58 @@ export async function resendOtp(req, res, next) {
     next(err);
   }
 }
+
+export async function login(req, res, next) {
+  try {
+    const { identifier, password } = req.body;
+
+    const isEmail = identifier.includes('@');
+    const lookupIdentifier = isEmail ? identifier.toLowerCase().trim() : identifier;
+    const user = await prisma.user.findFirst({
+      where: isEmail ? { email: lookupIdentifier } : { phone: lookupIdentifier },
+    });
+
+    if (!user) {
+      await bcrypt.compare(password, '$2b$10$abcdefghijklmnopqrstuuabcdefghijklmnopqrstuuabcdefghijklmnopqrstuu');
+      return res.status(401).json({
+        error: { message: 'Identificador o contraseña incorrectos' },
+      });
+    }
+
+    if (user.access === 'Bloqueado' || user.status !== 'Alta') {
+      return res.status(403).json({
+        error: { message: 'Cuenta desactivada. Contacta al administrador.' },
+      });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+
+    if (!isValid) {
+      return res.status(401).json({
+        error: { message: 'Identificador o contraseña incorrectos' },
+      });
+    }
+
+    const isFirstLogin = user.name === null || user.name === '' || user.gender === null;
+
+    const token = jwt.sign(
+      { id: user.id, phone: user.phone, role: user.role },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRY }
+    );
+
+    res.json({
+      token,
+      isFirstLogin,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}

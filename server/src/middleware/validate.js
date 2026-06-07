@@ -69,6 +69,18 @@ export const verifyOtpRules = [
   handleValidationErrors,
 ];
 
+export const loginRules = [
+  body('identifier')
+    .notEmpty().withMessage('El identificador es obligatorio')
+    .isLength({ max: 254 }).withMessage('El identificador no puede exceder 254 caracteres')
+    .trim(),
+
+  body('password')
+    .notEmpty().withMessage('La contraseña es obligatoria'),
+
+  handleValidationErrors,
+];
+
 export const resendOtpRules = [
   body('phone')
     .notEmpty().withMessage('El teléfono es obligatorio')
