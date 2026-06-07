@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+seed = "node prisma/seed.js"
+
 enum UserStatus {
   Alta
   Pausa

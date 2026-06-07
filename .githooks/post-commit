@@ -1,0 +1,18 @@
+#!/bin/sh
+# Post-commit hook: run database seed after every commit
+# Best-effort: warns on failure but never blocks the commit.
+
+SERVER_DIR="$(git rev-parse --show-toplevel)/server"
+
+if [ ! -f "$SERVER_DIR/package.json" ]; then
+  exit 0
+fi
+
+cd "$SERVER_DIR" || exit 0
+
+if [ ! -d "node_modules" ]; then
+  echo "[githooks] seed skipped: node_modules not found (run npm install first)"
+  exit 0
+fi
+
+npx prisma db seed > /dev/null 2>&1 || echo "[githooks] seed warning: unable to run (DB available?)"
