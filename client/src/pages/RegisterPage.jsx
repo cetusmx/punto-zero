@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box, TextField, Button, Typography, Checkbox, FormControlLabel,
-  CircularProgress, Alert, InputAdornment, IconButton,
+  CircularProgress, Alert, InputAdornment, IconButton, Card, CardContent,
 } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import api from '../lib/api'
@@ -96,7 +96,10 @@ export default function RegisterPage() {
     })
     setFieldErrors(errors)
 
-    if (Object.keys(errors).length > 0) return
+    if (Object.keys(errors).length > 0) {
+      submittedRef.current = false
+      return
+    }
 
     setLoading(true)
     try {
@@ -117,107 +120,127 @@ export default function RegisterPage() {
   }
 
   return (
-    <Box sx={{ p: 2, maxWidth: 400, mx: 'auto', pt: 4 }}>
-      <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main' }}>
-        Crear cuenta
+    <Box sx={{ p: 2, maxWidth: 448, mx: 'auto', pt: { xs: 4, sm: 8 } }}>
+      <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main', textAlign: 'center' }}>
+        punto-zero
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Regístrate para comenzar a participar
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
+        Únete a la comunidad de voluntarios
       </Typography>
 
-      {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
+      <Card elevation={0} sx={{ 
+        borderRadius: '24px', 
+        border: '1px solid',
+        borderColor: 'divider',
+        boxShadow: '0 2px 8px rgba(0,0,0,.06)'
+      }}>
+        <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+            Crear cuenta
+          </Typography>
 
-      <Box component="form" onSubmit={handleSubmit} noValidate>
-        <TextField
-          fullWidth
-          label="Nombre completo"
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          error={!!fieldErrors.name}
-          helperText={fieldErrors.name}
-          sx={{ mb: 2 }}
-        />
+          {serverError && <Alert severity="error" sx={{ mb: 3 }}>{serverError}</Alert>}
 
-        <TextField
-          fullWidth
-          label="Teléfono"
-          name="phone"
-          value={form.phone}
-          onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, '')
-            if (val.length <= 10) {
-              handleChange({ target: { name: 'phone', value: val, type: 'text', checked: false } })
-            }
-          }}
-          onBlur={handleBlur}
-          error={!!fieldErrors.phone}
-          helperText={fieldErrors.phone || '10 dígitos'}
-          slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '[0-9]*' } }}
-          sx={{ mb: 2 }}
-        />
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            <TextField
+              fullWidth
+              label="Nombre completo"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!fieldErrors.name}
+              helperText={fieldErrors.name}
+              sx={{ mb: 2.5 }}
+            />
 
-        <TextField
-          fullWidth
-          label="Correo electrónico"
-          name="email"
-          type="email"
-          value={form.email}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          error={!!fieldErrors.email}
-          helperText={fieldErrors.email}
-          sx={{ mb: 2 }}
-        />
+            <TextField
+              fullWidth
+              label="Teléfono"
+              name="phone"
+              value={form.phone}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '')
+                if (val.length <= 10) {
+                  handleChange({ target: { name: 'phone', value: val, type: 'text', checked: false } })
+                }
+              }}
+              onBlur={handleBlur}
+              error={!!fieldErrors.phone}
+              helperText={fieldErrors.phone || '10 dígitos'}
+              slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '[0-9]*' } }}
+              sx={{ mb: 2.5 }}
+            />
 
-        <TextField
-          fullWidth
-          label="Contraseña"
-          name="password"
-          type={showPassword ? 'text' : 'password'}
-          value={form.password}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          error={!!fieldErrors.password}
-          helperText={fieldErrors.password || 'Mínimo 8 caracteres y 1 especial'}
-          slotProps={{
-            input: {
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{ mb: 2 }}
-        />
+            <TextField
+              fullWidth
+              label="Correo electrónico"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!fieldErrors.email}
+              helperText={fieldErrors.email}
+              sx={{ mb: 2.5 }}
+            />
 
-        <FormControlLabel
-          control={<Checkbox checked={form.acceptedTerms} onChange={handleChange} name="acceptedTerms" />}
-          label="Acepto los Términos y Condiciones"
-          sx={{ mb: 1, alignItems: 'flex-start' }}
-        />
+            <TextField
+              fullWidth
+              label="Contraseña"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!fieldErrors.password}
+              helperText={fieldErrors.password || 'Mínimo 8 caracteres y 1 especial'}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              sx={{ mb: 2.5 }}
+            />
 
-        <FormControlLabel
-          control={<Checkbox checked={form.privacyAccepted} onChange={handleChange} name="privacyAccepted" />}
-          label="Acepto el Aviso de Privacidad"
-          sx={{ mb: 3, alignItems: 'flex-start' }}
-        />
+            <FormControlLabel
+              control={<Checkbox checked={form.acceptedTerms} onChange={handleChange} name="acceptedTerms" />}
+              label={<Typography variant="body2">Acepto los Términos y Condiciones</Typography>}
+              sx={{ mb: 0.5, alignItems: 'flex-start' }}
+            />
 
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          size="large"
-          disabled={loading || !isFormValid()}
-          sx={{ borderRadius: 3, py: 1.5 }}
-        >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Crear cuenta'}
+            <FormControlLabel
+              control={<Checkbox checked={form.privacyAccepted} onChange={handleChange} name="privacyAccepted" />}
+              label={<Typography variant="body2">Acepto el Aviso de Privacidad</Typography>}
+              sx={{ mb: 4, alignItems: 'flex-start' }}
+            />
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={loading || !isFormValid()}
+              sx={{ borderRadius: '12px', py: 1.5, fontWeight: 600 }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Crear cuenta'}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+      
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
+        ¿Ya tienes cuenta?{' '}
+        <Button onClick={() => navigate('/login')} sx={{ fontWeight: 600, textTransform: 'none' }}>
+          Inicia sesión
         </Button>
-      </Box>
+      </Typography>
     </Box>
   )
 }

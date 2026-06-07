@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, Link as RouterLink } from 'react-router-dom'
 import {
   Box, TextField, Button, Typography, CircularProgress, Alert,
-  InputAdornment, IconButton, Link,
+  InputAdornment, IconButton, Link, Card, CardContent,
 } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuth } from '../context/AuthContext'
@@ -96,83 +96,97 @@ export default function LoginPage() {
   }
 
   return (
-    <Box sx={{ p: 2, maxWidth: 400, mx: 'auto', pt: 4 }}>
-      <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main' }}>
-        Iniciar sesión
+    <Box sx={{ p: 2, maxWidth: 448, mx: 'auto', pt: { xs: 4, sm: 8 } }}>
+      <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main', textAlign: 'center' }}>
+        punto-zero
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Ingresa con tu teléfono o correo electrónico
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
+        Bienvenido de nuevo
       </Typography>
 
-      {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
+      <Card elevation={0} sx={{ 
+        borderRadius: '24px', 
+        border: '1px solid',
+        borderColor: 'divider',
+        boxShadow: '0 2px 8px rgba(0,0,0,.06)'
+      }}>
+        <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+            Iniciar sesión
+          </Typography>
 
-      <Box component="form" onSubmit={handleSubmit} noValidate>
-        <TextField
-          fullWidth
-          label="Teléfono o correo electrónico"
-          name="identifier"
-          value={form.identifier}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          error={!!fieldErrors.identifier}
-          helperText={fieldErrors.identifier}
-          sx={{ mb: 2 }}
-        />
+          {serverError && <Alert severity="error" sx={{ mb: 3 }}>{serverError}</Alert>}
 
-        <TextField
-          fullWidth
-          label="Contraseña"
-          name="password"
-          type={showPassword ? 'text' : 'password'}
-          value={form.password}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          error={!!fieldErrors.password}
-          helperText={fieldErrors.password}
-          slotProps={{
-            input: {
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{ mb: 1 }}
-        />
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            <TextField
+              fullWidth
+              label="Teléfono o correo electrónico"
+              name="identifier"
+              value={form.identifier}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!fieldErrors.identifier}
+              helperText={fieldErrors.identifier}
+              sx={{ mb: 2.5 }}
+            />
 
-        <Box sx={{ textAlign: 'right', mb: 3 }}>
-          <Link
-            component={RouterLink}
-            to="/forgot-password"
-            variant="body2"
-            color="text.secondary"
-            underline="hover"
-          >
-            ¿Olvidaste tu contraseña?
-          </Link>
-        </Box>
+            <TextField
+              fullWidth
+              label="Contraseña"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!fieldErrors.password}
+              helperText={fieldErrors.password}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              sx={{ mb: 1 }}
+            />
 
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          size="large"
-          disabled={loading || !isFormValid()}
-          sx={{ borderRadius: 3, py: 1.5, mb: 2 }}
-        >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Iniciar sesión'}
-        </Button>
+            <Box sx={{ textAlign: 'right', mb: 4 }}>
+              <Link
+                component={RouterLink}
+                to="/forgot-password"
+                variant="body2"
+                color="text.secondary"
+                underline="hover"
+                sx={{ fontWeight: 500 }}
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </Box>
 
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-          ¿No tienes cuenta?{' '}
-          <Link component={RouterLink} to="/register" underline="hover" color="primary.main">
-            Regístrate
-          </Link>
-        </Typography>
-      </Box>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={loading || !isFormValid()}
+              sx={{ borderRadius: '12px', py: 1.5, fontWeight: 600 }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Iniciar sesión'}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
+        ¿No tienes cuenta?{' '}
+        <Link component={RouterLink} to="/register" underline="hover" color="primary.main" sx={{ fontWeight: 600 }}>
+          Regístrate
+        </Link>
+      </Typography>
     </Box>
   )
 }

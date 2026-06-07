@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  Box, Typography, TextField, Button, Alert, CircularProgress,
+  Box, Typography, TextField, Button, Alert, CircularProgress, Card, CardContent,
 } from '@mui/material'
 import api from '../lib/api'
 
@@ -84,7 +84,7 @@ export default function OtpVerificationPage() {
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      navigate('/perfil', { replace: true })
+      navigate('/profile', { replace: true })
     } catch (err) {
       const msg = err.response?.data?.error?.message || 'Error al verificar el código'
       setError(msg)
@@ -118,72 +118,92 @@ export default function OtpVerificationPage() {
 
   if (!phone || !sessionToken) return null
 
-  if (loading && !digits.some((d) => d)) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    )
-  }
-
   return (
-    <Box sx={{ p: 2, maxWidth: 400, mx: 'auto', pt: 6, textAlign: 'center' }}>
-      <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main' }}>
-        Verifica tu teléfono
+    <Box sx={{ p: 2, maxWidth: 448, mx: 'auto', pt: { xs: 4, sm: 8 } }}>
+      <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main', textAlign: 'center' }}>
+        punto-zero
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        Enviamos un código de 6 dígitos al
-      </Typography>
-      <Typography variant="body1" sx={{ mb: 3, fontWeight: 600 }}>
-        {phone}
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
+        Verificación de identidad
       </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mb: 3 }}>
-        {digits.map((digit, index) => (
-          <TextField
-            key={index}
-            inputRef={(el) => (inputRefs.current[index] = el)}
-            value={digit}
-            onChange={(e) => handleChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            onPaste={handlePaste}
-            slotProps={{
-              htmlInput: {
-                maxLength: 1,
-                style: { textAlign: 'center', fontSize: '1.5rem', width: 32, height: 40, padding: 0 },
-                inputMode: 'numeric',
-                pattern: '[0-9]*',
-              },
-            }}
-            sx={{ width: 56 }}
-          />
-        ))}
-      </Box>
-
-      <Button
-        fullWidth
-        variant="contained"
-        size="large"
-        onClick={handleVerify}
-        disabled={loading || digits.some((d) => !d)}
-        sx={{ borderRadius: 3, py: 1.5, mb: 2 }}
-      >
-        {loading ? <CircularProgress size={24} color="inherit" /> : 'Verificar'}
-      </Button>
-
-      <Box sx={{ mt: 2 }}>
-        {canResend ? (
-          <Button onClick={handleResend} disabled={loading} size="small">
-            Reenviar código
-          </Button>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            Reenviar código en {cooldown} segundos
+      <Card elevation={0} sx={{ 
+        borderRadius: '24px', 
+        border: '1px solid',
+        borderColor: 'divider',
+        boxShadow: '0 2px 8px rgba(0,0,0,.06)'
+      }}>
+        <CardContent sx={{ p: { xs: 3, sm: 4 }, textAlign: 'center' }}>
+          <Typography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
+            Verifica tu teléfono
           </Typography>
-        )}
-      </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Enviamos un código de 6 dígitos al
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 4, fontWeight: 600 }}>
+            {phone}
+          </Typography>
+
+          {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', mb: 4 }}>
+            {digits.map((digit, index) => (
+              <TextField
+                key={index}
+                inputRef={(el) => (inputRefs.current[index] = el)}
+                value={digit}
+                onChange={(e) => handleChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={handlePaste}
+                slotProps={{
+                  htmlInput: {
+                    maxLength: 1,
+                    style: { textAlign: 'center', fontSize: '1.25rem', padding: '12px 0' },
+                    inputMode: 'numeric',
+                    pattern: '[0-9]*',
+                  },
+                }}
+                sx={{ 
+                  width: { xs: 44, sm: 56 },
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px'
+                  }
+                }}
+              />
+            ))}
+          </Box>
+
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            onClick={handleVerify}
+            disabled={loading || digits.some((d) => !d)}
+            sx={{ borderRadius: '12px', py: 1.5, fontWeight: 600, mb: 2 }}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Verificar'}
+          </Button>
+
+          <Box sx={{ mt: 2 }}>
+            {canResend ? (
+              <Button onClick={handleResend} disabled={loading} sx={{ fontWeight: 600, textTransform: 'none' }}>
+                Reenviar código
+              </Button>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Reenviar código en <strong>{cooldown}s</strong>
+              </Typography>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+      
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
+        ¿Te equivocaste de número?{' '}
+        <Button onClick={() => navigate('/register')} sx={{ fontWeight: 600, textTransform: 'none' }}>
+          Regresa
+        </Button>
+      </Typography>
     </Box>
   )
 }
