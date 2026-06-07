@@ -57,7 +57,7 @@ development_status:
   2-2-login-with-unified-phone-email-field: done
   2-3-password-recovery-via-sms: done
   2-4-mandatory-profile-form: done
-  2-5-account-status-management-whatsapp-links: backlog
+  2-5-account-status-management-whatsapp-links: ready-for-dev
   epic-2-retrospective: optional
 
   # Epic 3: Agenda, Scheduling & Saturday Operations

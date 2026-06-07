@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import {
   Box, Typography, Button, TextField, MenuItem, FormControl, FormLabel,
   RadioGroup, FormControlLabel, Radio, Checkbox, FormGroup, CircularProgress,
-  Alert, Card, CardContent, Grid, Divider
+  Alert, Card, CardContent, Grid, Divider, Dialog, DialogTitle, DialogContent,
+  DialogContentText, DialogActions, Stack
 } from '@mui/material'
 import LogoutIcon from '@mui/icons-material/Logout'
 import SaveIcon from '@mui/icons-material/Save'
+import WhatsAppIcon from '@mui/icons-material/WhatsApp'
 import { useAuth } from '../context/AuthContext'
 import api from '../lib/api'
 
@@ -15,6 +17,7 @@ const AGE_RANGES = ['<20', '20-29', '30-39', '40-49', '50-59', '60+', 'OTRA']
 const SCHEMES = ['Puntos de Acopio', 'Ruta en casa']
 const RESIDUE_TYPES = ['Crudos', 'Heces y guisados']
 const FREQUENCIES = ['Semanal', 'Quincenal']
+const STATUS_OPTIONS = ['Alta', 'Pausa', 'Baja']
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -22,6 +25,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
+  
+  const [links, setLinks] = useState({ whatsapp_avisos_url: '', whatsapp_abierto_url: '' })
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingStatus, setPendingStatus] = useState('')
 
   const isMandatory = !user?.gender
 
@@ -31,6 +38,7 @@ export default function ProfilePage() {
     esquema: user?.esquema || 'Puntos de Acopio',
     residuo: user?.residuo ? user.residuo.split(', ') : [],
     frecuencia: user?.frecuencia || 'Semanal',
+    status: user?.status || 'Alta',
   })
 
   useEffect(() => {
@@ -41,9 +49,20 @@ export default function ProfilePage() {
         esquema: user.esquema || 'Puntos de Acopio',
         residuo: user.residuo ? user.residuo.split(', ') : [],
         frecuencia: user.frecuencia || 'Semanal',
+        status: user.status || 'Alta',
       })
     }
+    fetchLinks()
   }, [user])
+
+  async function fetchLinks() {
+    try {
+      const { data } = await api.get('/config/whatsapp-links')
+      setLinks(data)
+    } catch (err) {
+      console.error('Error fetching links', err)
+    }
+  }
 
   function handleLogout() {
     logout()
@@ -52,7 +71,27 @@ export default function ProfilePage() {
 
   function handleChange(e) {
     const { name, value } = e.target
+    if (name === 'status' && (value === 'Pausa' || value === 'Baja') && user.status === 'Alta') {
+      setPendingStatus(value)
+      setConfirmOpen(true)
+      return
+    }
     setForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  async function handleConfirmStatus() {
+    setConfirmOpen(false)
+    setLoading(true)
+    try {
+      const { data } = await api.post('/auth/status', { status: pendingStatus })
+      updateUser(data.user)
+      setForm(prev => ({ ...prev, status: data.user.status }))
+      setSuccess('Estatus actualizado y calendarizaciones canceladas.')
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Error al cambiar estatus.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   function handleResidueChange(type) {
@@ -102,6 +141,46 @@ export default function ProfilePage() {
           : 'Gestiona tu información personal y de participación.'}
       </Typography>
 
+      {user?.status === 'Alta' && (
+        <Card elevation={0} sx={{ 
+          borderRadius: '24px', 
+          border: '1px solid',
+          borderColor: 'primary.light',
+          bgcolor: 'primary.50',
+          mb: 4
+        }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <WhatsAppIcon color="success" /> Grupos de la Comunidad
+            </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Button
+                fullWidth
+                variant="outlined"
+                color="success"
+                href={links.whatsapp_avisos_url}
+                target="_blank"
+                sx={{ borderRadius: '12px', textTransform: 'none' }}
+                disabled={!links.whatsapp_avisos_url}
+              >
+                Grupo de Avisos
+              </Button>
+              <Button
+                fullWidth
+                variant="outlined"
+                color="success"
+                href={links.whatsapp_abierto_url}
+                target="_blank"
+                sx={{ borderRadius: '12px', textTransform: 'none' }}
+                disabled={!links.whatsapp_abierto_url}
+              >
+                Grupo Abierto
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
+
       <Card elevation={0} sx={{ 
         borderRadius: '24px', 
         border: '1px solid',
@@ -116,8 +195,26 @@ export default function ProfilePage() {
           <Box component="form" onSubmit={handleSubmit} noValidate>
             <Grid container spacing={3}>
               <Grid item xs={12}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>Información Básica</Typography>
-                <TextField fullWidth label="Nombre" value={user?.name || ''} disabled sx={{ mb: 2 }} />
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>Información de Cuenta</Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={8}>
+                    <TextField fullWidth label="Nombre" value={user?.name || ''} disabled sx={{ mb: 2 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Estatus"
+                      name="status"
+                      value={form.status}
+                      onChange={handleChange}
+                    >
+                      {STATUS_OPTIONS.map(opt => (
+                        <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                </Grid>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <TextField fullWidth label="Teléfono" value={user?.phone || ''} disabled />
@@ -238,6 +335,21 @@ export default function ProfilePage() {
           Cerrar sesión
         </Button>
       )}
+
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Confirmar cambio de estatus</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Este cambio cancelará <strong>TODAS</strong> tus calendarizaciones futuras. ¿Estás seguro de que deseas continuar?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancelar</Button>
+          <Button onClick={handleConfirmStatus} color="error" autoFocus>
+            Confirmar y Cancelar Turnos
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

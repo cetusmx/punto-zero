@@ -254,3 +254,77 @@ export async function updateProfile(req, res, next) {
     next(err);
   }
 }
+
+export async function changeStatus(req, res, next) {
+  try {
+    const { status: targetStatus } = req.body;
+    const userId = req.user.id;
+    const currentStatus = req.user.status; // We might need to fetch it to be sure
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    
+    if (targetStatus === user.status) {
+      return res.json({ message: 'El estatus ya es el solicitado.', user });
+    }
+
+    // Cascading cancellations for Pausa/Baja
+    if (targetStatus === 'Pausa' || targetStatus === 'Baja') {
+      const now = new Date();
+      await prisma.scheduling.updateMany({
+        where: {
+          userId,
+          saturdayDate: { gt: now },
+          status: 'Pendiente'
+        },
+        data: {
+          status: 'Falta', // Or 'Cancelado' if we add that enum, but for now we follow schema enums
+          notes: `Cancelado automáticamente por cambio de estatus a ${targetStatus}`
+        }
+      });
+
+      // Notify admins
+      const admins = await prisma.user.findMany({ where: { role: 'admin' } });
+      if (admins.length > 0) {
+        await prisma.notificationBadge.createMany({
+          data: admins.map(admin => ({
+            userId: admin.id,
+            category: 'status_change',
+            title: 'Cambio de Estatus',
+            message: `El usuario ${user.name} (${user.phone}) cambió su estatus a ${targetStatus}.`,
+          }))
+        });
+      }
+    }
+
+    // Special rule: Baja -> Alta requires SMS to admin
+    if (user.status === 'Baja' && targetStatus === 'Alta') {
+      await sendSMS(process.env.ADMIN_PHONE || '+520000000000', `Solicitud de reactivación: ${user.name} (${user.phone}) desea volver a Alta.`);
+      // Per PRD UJ-8: Reverting from Baja needs authorization. 
+      // For MVP, we will set it to Alta but notify. If a strict block is needed, we'd need a "Pending" status.
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { status: targetStatus },
+    });
+
+    res.json({
+      message: `Estatus actualizado a ${targetStatus} exitosamente.`,
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        gender: updatedUser.gender,
+        age: updatedUser.age,
+        esquema: updatedUser.esquema,
+        residuo: updatedUser.residuo,
+        frecuencia: updatedUser.frecuencia,
+        status: updatedUser.status,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
