@@ -153,3 +153,44 @@ export async function login(req, res, next) {
     next(err);
   }
 }
+
+export async function forgotPassword(req, res, next) {
+  try {
+    const { phone } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { phone } });
+
+    if (user) {
+      const code = generateOtp(phone);
+      await sendSMS(`+52${phone}`, `Tu código para restablecer tu contraseña en punto-zero es: ${code}`);
+    }
+
+    // Always generic message to prevent enumeration
+    res.json({ message: 'Si el número está registrado, recibirás un código por SMS.' });
+  } catch (err) {
+    // If it's a rate limit error from generateOtp, we should handle it or just let it pass
+    if (err.status === 429) {
+      return res.status(429).json({ error: { message: err.message } });
+    }
+    next(err);
+  }
+}
+
+export async function resetPassword(req, res, next) {
+  try {
+    const { phone, code, password } = req.body;
+
+    verifyOtp(phone, code);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await prisma.user.update({
+      where: { phone },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ message: 'Contraseña actualizada exitosamente.' });
+  } catch (err) {
+    next(err);
+  }
+}

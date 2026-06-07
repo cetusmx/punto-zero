@@ -88,3 +88,28 @@ export const resendOtpRules = [
 
   handleValidationErrors,
 ];
+
+export const forgotPasswordRules = [
+  body('phone')
+    .notEmpty().withMessage('El teléfono es obligatorio')
+    .matches(/^\d{10}$/).withMessage('El teléfono debe tener 10 dígitos'),
+
+  handleValidationErrors,
+];
+
+export const resetPasswordRules = [
+  body('phone')
+    .notEmpty().withMessage('El teléfono es obligatorio')
+    .matches(/^\d{10}$/).withMessage('El teléfono debe tener 10 dígitos'),
+
+  body('code')
+    .notEmpty().withMessage('El código es obligatorio')
+    .matches(/^\d{6}$/).withMessage('El código debe tener 6 dígitos'),
+
+  body('password')
+    .notEmpty().withMessage('La contraseña es obligatoria')
+    .isLength({ min: 8, max: 128 }).withMessage('La contraseña debe tener entre 8 y 128 caracteres')
+    .matches(/[!@#$%^&*(),.?":{}|<>]/).withMessage('La contraseña debe contener al menos un carácter especial'),
+
+  handleValidationErrors,
+];
