@@ -52,12 +52,12 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Volunteer Onboarding & Identity
-  epic-2: in-progress
+  epic-2: done
   2-1-user-registration-with-sms-otp: done
   2-2-login-with-unified-phone-email-field: done
   2-3-password-recovery-via-sms: done
   2-4-mandatory-profile-form: done
-  2-5-account-status-management-whatsapp-links: ready-for-dev
+  2-5-account-status-management-whatsapp-links: done
   epic-2-retrospective: optional
 
   # Epic 3: Agenda, Scheduling & Saturday Operations
