@@ -43,6 +43,7 @@ model User {
   esquema   String?
   residuo   String?
   frecuencia String?
+  _migration_trigger String?
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
