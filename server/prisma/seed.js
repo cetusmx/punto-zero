@@ -54,6 +54,20 @@ async function main() {
     console.log(`[Seed] ${result.role}: ${result.name} (${result.phone})`);
   }
 
+  const CONFIGS = [
+    { key: 'whatsapp_avisos_url', value: 'https://chat.whatsapp.com/avisos-placeholder' },
+    { key: 'whatsapp_abierto_url', value: 'https://chat.whatsapp.com/abierto-placeholder' },
+  ];
+
+  for (const config of CONFIGS) {
+    await prisma.appConfig.upsert({
+      where: { key: config.key },
+      update: {},
+      create: config,
+    });
+    console.log(`[Seed] Config: ${config.key}`);
+  }
+
   console.log('[Seed] Done.');
 }
 
