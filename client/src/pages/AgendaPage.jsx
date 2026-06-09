@@ -68,7 +68,7 @@ export default function AgendaPage() {
   }) : []
 
   return (
-    <Box sx={{ py: 2, width: '100%' }}>
+    <Box sx={{ py: { xs: 1, sm: 2 } }}>
       <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main' }}>
         Agenda de Turnos
       </Typography>
@@ -76,12 +76,11 @@ export default function AgendaPage() {
         Selecciona un sábado para ver los puntos de acopio disponibles.
       </Typography>
 
-      <Grid container spacing={3} sx={{ width: '100%', m: 0 }}>
+      <Grid container spacing={3}>
         {/* Left Side: Filters and Calendar */}
-        <Grid item xs={12} md={5} sx={{ p: '0 !important', mb: { xs: 3, md: 0 } }}>
-          <Stack spacing={3} sx={{ width: '100%' }}>
+        <Grid item xs={12} md={5}>
+          <Stack spacing={3}>
             <Card elevation={0} sx={{ 
-              width: '100%',
               borderRadius: '24px', 
               border: '1px solid',
               borderColor: 'divider',
@@ -127,7 +126,6 @@ export default function AgendaPage() {
             </Card>
 
             <Card elevation={0} sx={{ 
-              width: '100%',
               borderRadius: '24px', 
               border: '1px solid',
               borderColor: 'divider',
@@ -141,10 +139,11 @@ export default function AgendaPage() {
         </Grid>
 
         {/* Right Side: Slot List */}
-        <Grid item xs={12} md={7} sx={{ p: { xs: '0 !important', md: '0 0 0 24px !important' } }}>
+        <Grid item xs={12} md={7}>
           {!selectedDate ? (
-            <Box sx={{ 
-              height: '100%', 
+            <Card elevation={0} sx={{ 
+              height: { md: '100%' },
+              minHeight: 300,
               display: 'flex', 
               flexDirection: 'column',
               alignItems: 'center', 
@@ -163,7 +162,7 @@ export default function AgendaPage() {
               <Typography variant="body2" color="text.disabled">
                 Verás los horarios y ubicaciones disponibles para ese día.
               </Typography>
-            </Box>
+            </Card>
           ) : (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
