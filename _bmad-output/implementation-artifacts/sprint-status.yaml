@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-07
-last_updated: 2026-06-07
+last_updated: 2026-06-08
 project: punto-zero
 project_key: NOKEY
 tracking_system: file-system
@@ -61,8 +61,8 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: Agenda, Scheduling & Saturday Operations
-  epic-3: backlog
-  3-1-agenda-view-with-filters: backlog
+  epic-3: in-progress
+  3-1-agenda-view-with-filters: done
   3-2-schedule-a-turno: backlog
   3-3-my-schedulings-attendance-history: backlog
   3-4-autonomous-turno-cancellation: backlog

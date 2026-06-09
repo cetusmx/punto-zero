@@ -6,6 +6,8 @@ import morgan from 'morgan';
 import { logger } from './config/logger.js';
 import { errorHandler } from './middleware/error-handler.js';
 import authRoutes from './src/routes/auth-routes.js';
+import configRoutes from './src/routes/config-routes.js';
+import agendaRoutes from './src/routes/agenda-routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,6 +18,8 @@ app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) }
 app.use(express.json());
 
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/config', configRoutes);
+app.use('/api/v1/agenda', agendaRoutes);
 
 app.get('/api/v1/health', (req, res) => {
   res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
