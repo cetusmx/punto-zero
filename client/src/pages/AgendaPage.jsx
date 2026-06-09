@@ -1,19 +1,27 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box, Typography, Grid, Card, CardContent, MenuItem, TextField,
-  FormControlLabel, Switch, Alert, Skeleton, Stack, Chip, Button, Divider, alpha
+  FormControlLabel, Switch, Alert, Skeleton, Stack, Chip, Button, Divider, alpha,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Checkbox,
+  CircularProgress
 } from '@mui/material'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { format, isSameDay, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import CalendarGrid from '../components/agenda/CalendarGrid'
 import api from '../lib/api'
 
 export default function AgendaPage() {
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [bookingLoading, setBookingLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  
   const [data, setData] = useState({ points: [], schedulings: [] })
   const [filters, setFilters] = useState({ colonias: [], points: [] })
   
@@ -21,6 +29,10 @@ export default function AgendaPage() {
   const [selectedPointId, setSelectedPointId] = useState('')
   const [onlyAvailable, setOnlyAvailable] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
+
+  const [bookingOpen, setBookingOpen] = useState(false)
+  const [selectedSlot, setSelectedSlot] = useState(null)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   useEffect(() => {
     fetchFilters()
@@ -53,6 +65,32 @@ export default function AgendaPage() {
     }
   }
 
+  async function handleBookTurn() {
+    setBookingLoading(true)
+    setError('')
+    try {
+      await api.post('/agenda/schedule', {
+        pointId: selectedSlot.id,
+        saturdayDate: selectedDate.toISOString(),
+        acceptedTerms
+      })
+      setSuccess('¡Turno agendado con éxito!')
+      setBookingOpen(false)
+      setTimeout(() => navigate('/mis-turnos'), 1500)
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Error al agendar el turno.')
+      setBookingOpen(false)
+    } finally {
+      setBookingLoading(false)
+    }
+  }
+
+  function openBooking(slot) {
+    setSelectedSlot(slot)
+    setAcceptedTerms(false)
+    setBookingOpen(true)
+  }
+
   const selectedDaySlots = selectedDate ? data.points.map(point => {
     const isReserved = data.schedulings.some(s => 
       s.pointId === point.id && isSameDay(parseISO(s.saturdayDate), selectedDate)
@@ -75,6 +113,9 @@ export default function AgendaPage() {
       <Typography color="text.secondary" sx={{ mb: 4 }}>
         Selecciona un sábado para ver los puntos de acopio disponibles.
       </Typography>
+
+      {success && <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 4, borderRadius: '16px' }}>{success}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 4, borderRadius: '16px' }}>{error}</Alert>}
 
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
         {/* Left Column: Filters and Calendar */}
@@ -212,6 +253,7 @@ export default function AgendaPage() {
                             ) : (
                               <Button 
                                 variant="contained" 
+                                onClick={() => openBooking(slot)}
                                 sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600 }}
                               >
                                 Agendar turno
@@ -228,6 +270,65 @@ export default function AgendaPage() {
           )}
         </Box>
       </Box>
+
+      {/* Booking Confirmation Dialog */}
+      <Dialog 
+        open={bookingOpen} 
+        onClose={() => !bookingLoading && setBookingOpen(false)}
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Confirmar reservación</DialogTitle>
+        <DialogContent>
+          {selectedSlot && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body1" gutterBottom>
+                Estás por agendar tu participación para el día:
+              </Typography>
+              <Typography variant="h6" color="primary.main" sx={{ fontWeight: 700, mb: 2 }}>
+                {selectedDate && format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+              </Typography>
+              
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', bgcolor: alpha('#f4f7f4', 0.5), mb: 3 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{selectedSlot.name}</Typography>
+                <Typography variant="body2" color="text.secondary">{selectedSlot.address}</Typography>
+                <Typography variant="body2" color="text.secondary">Horario: {selectedSlot.horario}</Typography>
+              </Paper>
+
+              <FormControlLabel
+                control={
+                  <Checkbox 
+                    checked={acceptedTerms} 
+                    onChange={(e) => setAcceptedTerms(e.target.checked)} 
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    Me comprometo a asistir puntualmente y avisar con anticipación si no puedo acudir.
+                  </Typography>
+                }
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button 
+            onClick={() => setBookingOpen(false)} 
+            disabled={bookingLoading}
+            sx={{ fontWeight: 600 }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleBookTurn}
+            disabled={!acceptedTerms || bookingLoading}
+            sx={{ borderRadius: '12px', fontWeight: 600, px: 4 }}
+          >
+            {bookingLoading ? <CircularProgress size={24} color="inherit" /> : 'Confirmar Turno'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

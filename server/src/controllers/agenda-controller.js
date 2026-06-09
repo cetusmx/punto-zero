@@ -56,3 +56,68 @@ export async function getAgendaFilters(req, res, next) {
     next(err);
   }
 }
+
+export async function createScheduling(req, res, next) {
+  try {
+    const { pointId, saturdayDate, acceptedTerms } = req.body;
+    const userId = req.user.id;
+
+    if (!acceptedTerms) {
+      return res.status(400).json({ error: { message: 'Debes aceptar el compromiso de asistencia.' } });
+    }
+
+    const date = new Date(saturdayDate);
+    // Force set time to noon to avoid timezone shift issues during comparison
+    date.setHours(12, 0, 0, 0);
+
+    // 1. Check if the point is active
+    const point = await prisma.collectionPoint.findUnique({ where: { id: parseInt(pointId) } });
+    if (!point || point.status !== 'Activo') {
+      return res.status(400).json({ error: { message: 'El punto de acopio no está disponible.' } });
+    }
+
+    // 2. Check if point is already taken for that date
+    const existingAtPoint = await prisma.scheduling.findFirst({
+      where: {
+        pointId: parseInt(pointId),
+        saturdayDate: date,
+        status: { in: ['Pendiente', 'Asistio'] }
+      }
+    });
+
+    if (existingAtPoint) {
+      return res.status(409).json({ error: { message: 'Este espacio ya ha sido reservado por otro voluntario.' } });
+    }
+
+    // 3. Check if user already has a turn for that Saturday
+    const userAlreadyScheduled = await prisma.scheduling.findFirst({
+      where: {
+        userId,
+        saturdayDate: date,
+        status: { in: ['Pendiente', 'Asistio'] }
+      }
+    });
+
+    if (userAlreadyScheduled) {
+      return res.status(409).json({ error: { message: 'Ya tienes un turno agendado para este sábado.' } });
+    }
+
+    // 4. Create scheduling
+    const scheduling = await prisma.scheduling.create({
+      data: {
+        userId,
+        pointId: parseInt(pointId),
+        saturdayDate: date,
+        acceptedTerms: true,
+        status: 'Pendiente'
+      }
+    });
+
+    res.status(201).json({
+      message: '¡Turno agendado exitosamente!',
+      scheduling
+    });
+  } catch (err) {
+    next(err);
+  }
+}
