@@ -55,8 +55,8 @@ async function main() {
   }
 
   const CONFIGS = [
-    { key: 'whatsapp_avisos_url', value: 'https://chat.whatsapp.com/avisos-placeholder' },
-    { key: 'whatsapp_abierto_url', value: 'https://chat.whatsapp.com/abierto-placeholder' },
+    { key: 'whatsapp_avisos_url', value: 'https://chat.whatsapp.com/HoxtnWrx9Am5a4ttjLOkaX' },
+    { key: 'whatsapp_abierto_url', value: 'https://chat.whatsapp.com/KYD7WsfthcQGt5vmqcK5pER' },
   ];
 
   for (const config of CONFIGS) {
