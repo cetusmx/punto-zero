@@ -121,3 +121,23 @@ export async function createScheduling(req, res, next) {
     next(err);
   }
 }
+
+export async function getMySchedulings(req, res, next) {
+  try {
+    const userId = req.user.id;
+
+    const schedulings = await prisma.scheduling.findMany({
+      where: { userId },
+      include: {
+        point: true
+      },
+      orderBy: {
+        saturdayDate: 'desc'
+      }
+    });
+
+    res.json(schedulings);
+  } catch (err) {
+    next(err);
+  }
+}

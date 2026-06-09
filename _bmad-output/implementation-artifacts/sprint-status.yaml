@@ -64,7 +64,7 @@ development_status:
   epic-3: in-progress
   3-1-agenda-view-with-filters: done
   3-2-schedule-a-turno: done
-  3-3-my-schedulings-attendance-history: backlog
+  3-3-my-schedulings-attendance-history: done
   3-4-autonomous-turno-cancellation: backlog
   3-5-saturday-operations-default-attendance-faltas: backlog
   3-6-admin-saturday-turn-management-cancellations: backlog
