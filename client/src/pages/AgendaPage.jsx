@@ -68,7 +68,7 @@ export default function AgendaPage() {
   }) : []
 
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, width: '100%' }}>
       <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main' }}>
         Agenda de Turnos
       </Typography>
@@ -76,69 +76,72 @@ export default function AgendaPage() {
         Selecciona un sábado para ver los puntos de acopio disponibles.
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ width: '100%', m: 0 }}>
         {/* Left Side: Filters and Calendar */}
-        <Grid item xs={12} md={5}>
-          <Card elevation={0} sx={{ 
-            borderRadius: '24px', 
-            border: '1px solid',
-            borderColor: 'divider',
-            boxShadow: '0 2px 8px rgba(0,0,0,.06)',
-            mb: 3
-          }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>Filtros de búsqueda</Typography>
-              <Stack spacing={2}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Colonia"
-                  size="small"
-                  value={selectedColonia}
-                  onChange={(e) => setSelectedColonia(e.target.value)}
-                >
-                  <MenuItem value="">Todas las colonias</MenuItem>
-                  {filters.colonias.map(c => (
-                    <MenuItem key={c} value={c}>{c}</MenuItem>
-                  ))}
-                </TextField>
+        <Grid item xs={12} md={5} sx={{ p: '0 !important', mb: { xs: 3, md: 0 } }}>
+          <Stack spacing={3} sx={{ width: '100%' }}>
+            <Card elevation={0} sx={{ 
+              width: '100%',
+              borderRadius: '24px', 
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: '0 2px 8px rgba(0,0,0,.06)',
+            }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>Filtros de búsqueda</Typography>
+                <Stack spacing={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Colonia"
+                    size="small"
+                    value={selectedColonia}
+                    onChange={(e) => setSelectedColonia(e.target.value)}
+                  >
+                    <MenuItem value="">Todas las colonias</MenuItem>
+                    {filters.colonias.map(c => (
+                      <MenuItem key={c} value={c}>{c}</MenuItem>
+                    ))}
+                  </TextField>
 
-                <TextField
-                  select
-                  fullWidth
-                  label="Punto de Acopio"
-                  size="small"
-                  value={selectedPointId}
-                  onChange={(e) => setSelectedPointId(e.target.value)}
-                >
-                  <MenuItem value="">Todos los puntos</MenuItem>
-                  {filters.points.map(p => (
-                    <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
-                  ))}
-                </TextField>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Punto de Acopio"
+                    size="small"
+                    value={selectedPointId}
+                    onChange={(e) => setSelectedPointId(e.target.value)}
+                  >
+                    <MenuItem value="">Todos los puntos</MenuItem>
+                    {filters.points.map(p => (
+                      <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                    ))}
+                  </TextField>
 
-                <FormControlLabel
-                  control={<Switch checked={onlyAvailable} onChange={(e) => setOnlyAvailable(e.target.checked)} />}
-                  label={<Typography variant="body2">Solo con cupo disponible</Typography>}
-                />
-              </Stack>
-            </CardContent>
-          </Card>
+                  <FormControlLabel
+                    control={<Switch checked={onlyAvailable} onChange={(e) => setOnlyAvailable(e.target.checked)} />}
+                    label={<Typography variant="body2">Solo con cupo disponible</Typography>}
+                  />
+                </Stack>
+              </CardContent>
+            </Card>
 
-          <Card elevation={0} sx={{ 
-            borderRadius: '24px', 
-            border: '1px solid',
-            borderColor: 'divider',
-            boxShadow: '0 2px 8px rgba(0,0,0,.06)'
-          }}>
-            <CardContent sx={{ p: 3 }}>
-              <CalendarGrid selectedDate={selectedDate} onDateSelect={setSelectedDate} />
-            </CardContent>
-          </Card>
+            <Card elevation={0} sx={{ 
+              width: '100%',
+              borderRadius: '24px', 
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: '0 2px 8px rgba(0,0,0,.06)'
+            }}>
+              <CardContent sx={{ p: 3 }}>
+                <CalendarGrid selectedDate={selectedDate} onDateSelect={setSelectedDate} />
+              </CardContent>
+            </Card>
+          </Stack>
         </Grid>
 
         {/* Right Side: Slot List */}
-        <Grid item xs={12} md={7}>
+        <Grid item xs={12} md={7} sx={{ p: { xs: '0 !important', md: '0 0 0 24px !important' } }}>
           {!selectedDate ? (
             <Box sx={{ 
               height: '100%', 
