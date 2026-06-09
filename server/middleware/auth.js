@@ -18,3 +18,10 @@ export function authenticate(req, res, next) {
     return res.status(401).json({ error: { message: 'Token inválido o expirado.' } });
   }
 }
+
+export function authorizeAdmin(req, res, next) {
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'superadmin')) {
+    return res.status(403).json({ error: { message: 'No tienes permisos para realizar esta acción.' } });
+  }
+  next();
+}
