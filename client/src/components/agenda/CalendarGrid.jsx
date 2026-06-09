@@ -1,10 +1,14 @@
 import { useState, useMemo } from 'react'
 import {
-  Box, IconButton, Typography, Grid, Paper, alpha
+  Box, IconButton, Typography, Grid, Paper, alpha, Stack
 } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSaturday, isSameDay, isToday } from 'date-fns'
+import { 
+  format, addMonths, subMonths, startOfMonth, endOfMonth, 
+  eachDayOfInterval, isSaturday, isSameDay, isToday, 
+  startOfWeek, endOfWeek 
+} from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export default function CalendarGrid({ selectedDate, onDateSelect }) {
@@ -13,87 +17,113 @@ export default function CalendarGrid({ selectedDate, onDateSelect }) {
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
 
-  const days = useMemo(() => {
-    const start = startOfMonth(currentMonth)
-    const end = endOfMonth(currentMonth)
-    return eachDayOfInterval({ start, end })
+  const weeks = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth)
+    const monthEnd = endOfMonth(currentMonth)
+    const startDate = startOfWeek(monthStart, { weekStartsOn: 0 }) // Start on Sunday
+    const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 })
+
+    const allDays = eachDayOfInterval({ start: startDate, end: endDate })
+    
+    const weeksArr = []
+    for (let i = 0; i < allDays.length; i += 7) {
+      weeksArr.push(allDays.slice(i, i + 7))
+    }
+    return weeksArr
   }, [currentMonth])
 
-  // Get the start day of the week to align the grid
-  const firstDayOfMonth = startOfMonth(currentMonth).getDay()
-  const blanks = Array(firstDayOfMonth).fill(null)
+  const dayHeaders = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, textTransform: 'capitalize' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, textTransform: 'capitalize', color: 'text.primary' }}>
           {format(currentMonth, 'MMMM yyyy', { locale: es })}
         </Typography>
-        <Box>
-          <IconButton onClick={prevMonth} size="small">
-            <ChevronLeftIcon />
+        <Stack direction="row" spacing={1}>
+          <IconButton onClick={prevMonth} size="small" sx={{ border: '1px solid', borderColor: 'divider' }}>
+            <ChevronLeftIcon fontSize="small" />
           </IconButton>
-          <IconButton onClick={nextMonth} size="small">
-            <ChevronRightIcon />
+          <IconButton onClick={nextMonth} size="small" sx={{ border: '1px solid', borderColor: 'divider' }}>
+            <ChevronRightIcon fontSize="small" />
           </IconButton>
-        </Box>
+        </Stack>
       </Box>
 
-      <Grid container spacing={1}>
-        {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((day) => (
-          <Grid item xs={1.71} key={day}>
-            <Typography variant="caption" color="text.secondary" align="center" sx={{ display: 'block', fontWeight: 600 }}>
+      {/* Day Headers */}
+      <Grid container spacing={1} sx={{ mb: 1 }}>
+        {dayHeaders.map((day, i) => (
+          <Grid item xs={1.71} key={`header-${i}`}>
+            <Typography variant="caption" color="text.secondary" align="center" sx={{ display: 'block', fontWeight: 600, fontSize: '0.7rem' }}>
               {day}
             </Typography>
           </Grid>
         ))}
-
-        {blanks.map((_, i) => (
-          <Grid item xs={1.71} key={`blank-${i}`} />
-        ))}
-
-        {days.map((day) => {
-          const selectable = isSaturday(day) && day >= new Date()
-          const isSelected = selectedDate && isSameDay(day, selectedDate)
-          const today = isToday(day)
-
-          return (
-            <Grid item xs={1.71} key={day.toString()}>
-              <Paper
-                elevation={0}
-                onClick={() => selectable && onDateSelect(day)}
-                sx={{
-                  aspectRatio: '1/1',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: selectable ? 'pointer' : 'default',
-                  borderRadius: '12px',
-                  bgcolor: isSelected 
-                    ? 'primary.main' 
-                    : selectable 
-                      ? alpha('#41703f', 0.1) 
-                      : 'transparent',
-                  color: isSelected 
-                    ? 'white' 
-                    : selectable 
-                      ? 'primary.main' 
-                      : 'text.disabled',
-                  border: today ? '1px solid' : 'none',
-                  borderColor: 'primary.main',
-                  '&:hover': {
-                    bgcolor: selectable && !isSelected ? alpha('#41703f', 0.2) : undefined
-                  }
-                }}
-              >
-                <Typography variant="body2" sx={{ fontWeight: selectable || today ? 600 : 400 }}>
-                  {format(day, 'd')}
-                </Typography>
-              </Paper>
-            </Grid>
-          )
-        })}
       </Grid>
+
+      {/* Weeks Rows */}
+      <Stack spacing={1}>
+        {weeks.map((week, wIdx) => (
+          <Grid container spacing={1} key={`week-${wIdx}`}>
+            {week.map((day, dIdx) => {
+              const isCurrentMonth = day.getMonth() === currentMonth.getMonth()
+              const selectable = isSaturday(day) && day >= new Date()
+              const isSelected = selectedDate && isSameDay(day, selectedDate)
+              const today = isToday(day)
+
+              return (
+                <Grid item xs={1.71} key={day.toString()}>
+                  <Paper
+                    elevation={0}
+                    onClick={() => selectable && onDateSelect(day)}
+                    sx={{
+                      py: 1.5, // Taller touch target
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: selectable ? 'pointer' : 'default',
+                      borderRadius: '12px',
+                      transition: 'all 0.2s',
+                      bgcolor: isSelected 
+                        ? 'primary.main' 
+                        : selectable 
+                          ? alpha('#41703f', 0.08) 
+                          : 'transparent',
+                      color: isSelected 
+                        ? 'white' 
+                        : selectable 
+                          ? 'primary.main' 
+                          : isCurrentMonth ? 'text.secondary' : 'text.disabled',
+                      border: today ? '2px solid' : isSelected ? 'none' : '1px solid',
+                      borderColor: isSelected 
+                        ? 'transparent' 
+                        : today 
+                          ? 'primary.main' 
+                          : selectable 
+                            ? alpha('#41703f', 0.2) 
+                            : 'transparent',
+                      '&:hover': {
+                        bgcolor: selectable && !isSelected ? alpha('#41703f', 0.15) : undefined,
+                        transform: selectable ? 'scale(1.05)' : 'none'
+                      }
+                    }}
+                  >
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontWeight: selectable || today ? 700 : 400,
+                        fontSize: selectable ? '1rem' : '0.875rem'
+                      }}
+                    >
+                      {format(day, 'd')}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              )
+            })}
+          </Grid>
+        ))}
+      </Stack>
     </Box>
   )
 }
