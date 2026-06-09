@@ -141,3 +141,42 @@ export async function getMySchedulings(req, res, next) {
     next(err);
   }
 }
+
+export async function cancelScheduling(req, res, next) {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const scheduling = await prisma.scheduling.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!scheduling) {
+      return res.status(404).json({ error: { message: 'Turno no encontrado.' } });
+    }
+
+    if (scheduling.userId !== userId) {
+      return res.status(403).json({ error: { message: 'No tienes permiso para cancelar este turno.' } });
+    }
+
+    if (scheduling.status !== 'Pendiente') {
+      return res.status(400).json({ error: { message: 'Solo se pueden cancelar turnos pendientes.' } });
+    }
+
+    const updated = await prisma.scheduling.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: 'Cancelado',
+        cancelledAt: new Date(),
+        cancellationType: 'Volunteer'
+      }
+    });
+
+    res.json({
+      message: 'Turno cancelado exitosamente.',
+      scheduling: updated
+    });
+  } catch (err) {
+    next(err);
+  }
+}

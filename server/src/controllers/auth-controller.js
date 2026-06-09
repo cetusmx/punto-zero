@@ -277,7 +277,7 @@ export async function changeStatus(req, res, next) {
           status: 'Pendiente'
         },
         data: {
-          status: 'Falta', // Or 'Cancelado' if we add that enum, but for now we follow schema enums
+          status: 'Cancelado',
           notes: `Cancelado automáticamente por cambio de estatus a ${targetStatus}`
         }
       });

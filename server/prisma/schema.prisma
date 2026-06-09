@@ -27,6 +27,7 @@ enum AttendanceStatus {
   Pendiente
   Asistio
   Falta
+  Cancelado
 }
 
 model User {

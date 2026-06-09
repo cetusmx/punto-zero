@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box, Typography, Grid, Card, CardContent, Stack, Chip, Button, 
-  CircularProgress, Alert, Divider, alpha
+  CircularProgress, Alert, Divider, alpha, Dialog, DialogTitle,
+  DialogContent, DialogContentText, DialogActions
 } from '@mui/material'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import HistoryIcon from '@mui/icons-material/History'
+import CancelIcon from '@mui/icons-material/Cancel'
 import { format, isAfter, startOfDay, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import api from '../lib/api'
@@ -17,13 +19,19 @@ const STATUS_COLORS = {
   Pendiente: { color: 'warning', label: 'Pendiente' },
   Asistio: { color: 'success', label: 'Asistió' },
   Falta: { color: 'error', label: 'Falta' },
+  Cancelado: { color: 'default', label: 'Cancelado' },
 }
 
 export default function MySchedulesPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [cancelLoading, setCancelLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [turns, setTurns] = useState([])
+
+  const [cancelDialogOpen, setCancelOpen] = useState(false)
+  const [selectedTurn, setSelectedTurn] = useState(null)
 
   useEffect(() => {
     fetchMyTurns()
@@ -42,6 +50,27 @@ export default function MySchedulesPage() {
     }
   }
 
+  async function handleCancelTurn() {
+    setCancelOpen(false)
+    setCancelLoading(true)
+    setError('')
+    try {
+      await api.post(`/agenda/cancel/${selectedTurn.id}`)
+      setSuccess('Turno cancelado exitosamente.')
+      await fetchMyTurns()
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Error al cancelar el turno.')
+    } finally {
+      setCancelLoading(false)
+    }
+  }
+
+  function openCancel(turn) {
+    setSelectedTurn(turn)
+    setCancelOpen(true)
+  }
+
   const today = startOfDay(new Date())
 
   const upcomingTurns = turns.filter(t => 
@@ -53,7 +82,7 @@ export default function MySchedulesPage() {
     !upcomingTurns.find(ut => ut.id === t.id)
   )
 
-  function TurnCard({ turn }) {
+  function TurnCard({ turn, isUpcoming }) {
     const statusInfo = STATUS_COLORS[turn.status] || { color: 'default', label: turn.status }
     
     return (
@@ -91,6 +120,19 @@ export default function MySchedulesPage() {
                 </Box>
               </Stack>
             </Grid>
+            {isUpcoming && (
+              <Grid item xs={12} sm={4} sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
+                <Button 
+                  size="small" 
+                  color="error" 
+                  startIcon={<CancelIcon />}
+                  onClick={() => openCancel(turn)}
+                  sx={{ fontWeight: 600, textTransform: 'none' }}
+                >
+                  Cancelar turno
+                </Button>
+              </Grid>
+            )}
           </Grid>
         </CardContent>
       </Card>
@@ -114,7 +156,9 @@ export default function MySchedulesPage() {
         Gestiona tus próximas participaciones y revisa tu historial.
       </Typography>
 
+      {success && <Alert severity="success" sx={{ mb: 4, borderRadius: '16px' }}>{success}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 4, borderRadius: '16px' }}>{error}</Alert>}
+      {cancelLoading && <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}><CircularProgress size={20} /> <Typography variant="body2">Cancelando turno...</Typography></Box>}
 
       <Grid container spacing={4}>
         {/* Upcoming Turns */}
@@ -140,7 +184,7 @@ export default function MySchedulesPage() {
               </Button>
             </Box>
           ) : (
-            upcomingTurns.map(turn => <TurnCard key={turn.id} turn={turn} />)
+            upcomingTurns.map(turn => <TurnCard key={turn.id} turn={turn} isUpcoming={true} />)
           )}
         </Grid>
 
@@ -160,10 +204,26 @@ export default function MySchedulesPage() {
               </Typography>
             </Box>
           ) : (
-            historyTurns.map(turn => <TurnCard key={turn.id} turn={turn} />)
+            historyTurns.map(turn => <TurnCard key={turn.id} turn={turn} isUpcoming={false} />)
           )}
         </Grid>
       </Grid>
+
+      {/* Cancellation Dialog */}
+      <Dialog open={cancelDialogOpen} onClose={() => setCancelOpen(false)} PaperProps={{ sx: { borderRadius: '24px' } }}>
+        <DialogTitle sx={{ fontWeight: 700 }}>¿Cancelar este turno?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Esta acción liberará el espacio para otros voluntarios. Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setCancelOpen(false)} sx={{ fontWeight: 600 }}>Volver</Button>
+          <Button onClick={handleCancelTurn} color="error" variant="contained" sx={{ borderRadius: '12px', fontWeight: 600 }}>
+            Confirmar Cancelación
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
