@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-07
-last_updated: 2026-06-20
+last_updated: 2026-06-21
 project: punto-zero
 project_key: NOKEY
 tracking_system: file-system
@@ -75,7 +75,7 @@ development_status:
   4-1-collection-points-crud-saturday-exceptions: done
   4-2-inactivate-collection-point-cascade-cancellation: done
   4-3-admin-user-management-list-search-block-edit: done
-  4-4-superadmin-role-management: backlog
+  4-4-superadmin-role-management: ready-for-dev
   4-5-whatsapp-configuration-metrics-dashboard: backlog
   epic-4-retrospective: optional
 
