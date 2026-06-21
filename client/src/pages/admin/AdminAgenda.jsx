@@ -15,6 +15,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { format, addDays, isSaturday } from 'date-fns'
 import { es } from 'date-fns/locale'
 import api from '../../lib/api'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const STATUS_COLORS = {
   Pendiente: 'warning',
@@ -42,6 +43,8 @@ export default function AdminAgenda() {
   const [massCancelIds, setMassCancelIds] = useState([])
   const [upcomingLoading, setUpcomingLoading] = useState(false)
   const [accordionExpanded, setAccordionExpanded] = useState(false)
+
+  const [confirmDialog, setConfirmDialog] = useState({ open: false })
 
   // Generate list of recent and future Saturdays
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -97,8 +100,21 @@ export default function AdminAgenda() {
     }
   }
 
-  async function handleCancelTurn(id) {
-    if (!window.confirm('¿Estás seguro de que deseas cancelar este turno?')) return
+  const handleCancelTurn = (id) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Cancelar Turno',
+      message: '¿Estás seguro de que deseas cancelar este turno?',
+      confirmColor: 'error',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, loading: true }))
+        await executeCancelTurn(id)
+        setConfirmDialog(prev => ({ ...prev, open: false }))
+      }
+    })
+  }
+
+  const executeCancelTurn = async (id) => {
     try {
       await api.post(`/admin/agenda/turns/${id}/cancel`)
       fetchTurns()
@@ -108,9 +124,22 @@ export default function AdminAgenda() {
     }
   }
 
-  async function handleBulkCancel() {
+  const handleBulkCancel = () => {
     if (massCancelIds.length === 0) return
-    if (!window.confirm(`¿Estás seguro de que deseas cancelar los ${massCancelIds.length} turnos seleccionados?`)) return
+    setConfirmDialog({
+      open: true,
+      title: 'Cancelación Masiva',
+      message: `¿Estás seguro de que deseas cancelar los ${massCancelIds.length} turnos seleccionados?`,
+      confirmColor: 'error',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, loading: true }))
+        await executeBulkCancel()
+        setConfirmDialog(prev => ({ ...prev, open: false }))
+      }
+    })
+  }
+
+  const executeBulkCancel = async () => {
     try {
       await api.post('/admin/agenda/turns/cancel-multiple', { ids: massCancelIds })
       setMassCancelIds([])
@@ -456,6 +485,16 @@ export default function AdminAgenda() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmColor={confirmDialog.confirmColor}
+        loading={confirmDialog.loading}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+      />
     </Box>
   )
 }

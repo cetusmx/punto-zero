@@ -15,6 +15,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { format, isSaturday } from 'date-fns'
 import { es } from 'date-fns/locale'
 import api from '../../lib/api'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 function PointFormDialog({ open, onClose, point, onSaved }) {
   const [formData, setFormData] = useState({
@@ -22,6 +23,7 @@ function PointFormDialog({ open, onClose, point, onSaved }) {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [confirmDialog, setConfirmDialog] = useState({ open: false })
 
   useEffect(() => {
     if (open) {
@@ -49,16 +51,29 @@ function PointFormDialog({ open, onClose, point, onSaved }) {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     
     const isDeactivating = point && point.status !== 'Inactivo' && formData.status === 'Inactivo'
     if (isDeactivating) {
-      if (!window.confirm('¿Seguro que quieres inhabilitar el punto? Se cancelarán reservas activas y se notificará a los usuarios afectados.')) {
-        return
-      }
+      setConfirmDialog({
+        open: true,
+        title: 'Inhabilitar Punto de Acopio',
+        message: '¿Seguro que quieres inhabilitar el punto? Se cancelarán reservas activas y se notificará a los usuarios afectados.',
+        confirmColor: 'warning',
+        onConfirm: async () => {
+          setConfirmDialog(prev => ({ ...prev, loading: true }))
+          await executeSave()
+          setConfirmDialog(prev => ({ ...prev, open: false }))
+        }
+      })
+      return
     }
 
+    executeSave()
+  }
+
+  const executeSave = async () => {
     setLoading(true)
     setError('')
     try {
@@ -125,6 +140,15 @@ function PointFormDialog({ open, onClose, point, onSaved }) {
           </Button>
         </DialogActions>
       </form>
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmColor={confirmDialog.confirmColor}
+        loading={confirmDialog.loading}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+      />
     </Dialog>
   )
 }
@@ -136,6 +160,7 @@ function ExceptionsDialog({ open, onClose, point }) {
   const [dateStr, setDateStr] = useState('')
   const [reason, setReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState({ open: false })
 
   useEffect(() => {
     if (open && point) {
@@ -158,7 +183,7 @@ function ExceptionsDialog({ open, onClose, point }) {
     }
   }
 
-  const handleAddException = async () => {
+  const handleAddException = () => {
     if (!dateStr) return
     const targetDate = new Date(`${dateStr}T12:00:00`)
     if (!isSaturday(targetDate)) {
@@ -166,9 +191,20 @@ function ExceptionsDialog({ open, onClose, point }) {
       return
     }
 
-    // Confirmation text about cancelling active turns
-    if (!window.confirm('¿Estás seguro de inhabilitar este sábado? Las reservas activas para este día se cancelarán automáticamente y se notificará a los usuarios afectados.')) return
+    setConfirmDialog({
+      open: true,
+      title: 'Inhabilitar Sábado',
+      message: '¿Estás seguro de inhabilitar este sábado? Las reservas activas para este día se cancelarán automáticamente y se notificará a los usuarios afectados.',
+      confirmColor: 'warning',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, loading: true }))
+        await executeAddException()
+        setConfirmDialog(prev => ({ ...prev, open: false }))
+      }
+    })
+  }
 
+  const executeAddException = async () => {
     setActionLoading(true)
     setError('')
     try {
@@ -186,12 +222,24 @@ function ExceptionsDialog({ open, onClose, point }) {
     }
   }
 
-  const handleDeleteException = async (date) => {
-    if (!window.confirm('¿Seguro que quieres eliminar esta excepción? El sábado volverá a estar disponible para reservas.')) return
+  const handleDeleteException = (date) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Eliminar Excepción',
+      message: '¿Seguro que quieres eliminar esta excepción? El sábado volverá a estar disponible para reservas.',
+      confirmColor: 'error',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, loading: true }))
+        await executeDeleteException(date)
+        setConfirmDialog(prev => ({ ...prev, open: false }))
+      }
+    })
+  }
+
+  const executeDeleteException = async (date) => {
     setActionLoading(true)
     setError('')
     try {
-      // Use YYYY-MM-DD directly from the ISO string to avoid timezone drift
       const formattedDate = typeof date === 'string' && date.includes('T') ? date.split('T')[0] : format(new Date(date), 'yyyy-MM-dd')
       await api.delete(`/admin/collection-points/${point.id}/exceptions/${formattedDate}`)
       fetchExceptions()
@@ -272,8 +320,17 @@ function ExceptionsDialog({ open, onClose, point }) {
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} color="inherit" sx={{ textTransform: 'none' }}>Cerrar</Button>
+        <Button onClick={onClose} variant="contained" sx={{ borderRadius: '8px', textTransform: 'none' }}>Cerrar</Button>
       </DialogActions>
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmColor={confirmDialog.confirmColor}
+        loading={confirmDialog.loading}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+      />
     </Dialog>
   )
 }

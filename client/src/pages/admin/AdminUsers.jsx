@@ -11,9 +11,9 @@ import BlockIcon from '@mui/icons-material/Block'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import SearchIcon from '@mui/icons-material/Search'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import api from '../../lib/api'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 // Simple debounce
 function useDebounce(value, delay) {
@@ -189,6 +189,7 @@ export default function AdminUsers() {
 
   const [editOpen, setEditOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState({ open: false })
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -222,31 +223,41 @@ export default function AdminUsers() {
     setPage(0)
   }
 
-  const handleBlockUnblock = async (user) => {
+  const handleBlockUnblock = (user) => {
     const isBlocking = user.access === 'Habilitado'
-    
+    let title = ''
+    let message = ''
+
     if (isBlocking && user.futureSchedulingsCount > 0) {
-      if (!window.confirm(`Este usuario tiene ${user.futureSchedulingsCount} calendarizaciones futuras. ¿Deseas continuar? Se cancelarán y liberarán.`)) {
-        return
-      }
+      title = 'Bloquear y Cancelar Turnos'
+      message = `Este usuario tiene ${user.futureSchedulingsCount} calendarizaciones futuras. ¿Deseas continuar? Se cancelarán y liberarán.`
     } else if (isBlocking) {
-      if (!window.confirm(`¿Seguro que deseas bloquear a ${user.name}?`)) {
-        return
-      }
+      title = 'Bloquear Usuario'
+      message = `¿Seguro que deseas bloquear a ${user.name}?`
     } else {
-      if (!window.confirm(`¿Seguro que deseas desbloquear a ${user.name}?`)) {
-        return
-      }
+      title = 'Desbloquear Usuario'
+      message = `¿Seguro que deseas desbloquear a ${user.name}?`
     }
 
-    try {
-      await api.post(`/admin/users/${user.id}/block`, {
-        action: isBlocking ? 'block' : 'unblock'
-      })
-      fetchUsers()
-    } catch (err) {
-      setError(err.response?.data?.error?.message || 'Error al cambiar acceso del usuario.')
-    }
+    setConfirmDialog({
+      open: true,
+      title,
+      message,
+      confirmColor: isBlocking ? 'error' : 'success',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, loading: true }))
+        try {
+          await api.post(`/admin/users/${user.id}/block`, {
+            action: isBlocking ? 'block' : 'unblock'
+          })
+          fetchUsers()
+          setConfirmDialog(prev => ({ ...prev, open: false }))
+        } catch (err) {
+          setError(err.response?.data?.error?.message || 'Error al cambiar acceso del usuario.')
+          setConfirmDialog(prev => ({ ...prev, open: false }))
+        }
+      }
+    })
   }
 
   return (
@@ -366,6 +377,16 @@ export default function AdminUsers() {
         onClose={() => setEditOpen(false)} 
         user={selectedUser} 
         onSaved={fetchUsers} 
+      />
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmColor={confirmDialog.confirmColor}
+        loading={confirmDialog.loading}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
       />
     </Box>
   )
