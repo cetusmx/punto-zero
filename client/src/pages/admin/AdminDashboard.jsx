@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Box, Typography, Grid, Card, CardContent, CircularProgress, Paper } from '@mui/material'
-import { getMetrics } from '../../../services/admin.js'
+import { getMetrics } from '../../services/admin.js'
 
 function MetricCard({ title, value, subtitle }) {
   return (

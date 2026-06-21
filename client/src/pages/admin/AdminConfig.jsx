@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Box, Typography, Card, CardContent, TextField, Button, Snackbar, Alert, CircularProgress } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
-import { getConfig, updateConfig } from '../../../services/admin.js'
+import { getConfig, updateConfig } from '../../services/admin.js'
 
 export default function AdminConfig() {
   const [loading, setLoading] = useState(false)
