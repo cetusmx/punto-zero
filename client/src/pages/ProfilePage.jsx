@@ -56,9 +56,23 @@ export default function ProfilePage() {
   }, [user])
 
   async function fetchLinks() {
+    if (user?.status !== 'Alta') return
     try {
-      const { data } = await api.get('/config/whatsapp-links')
-      setLinks(data)
+      const { data } = await api.get('/config')
+      
+      const isValidUrl = (url) => {
+        try {
+          const parsed = new URL(url);
+          return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        } catch (e) {
+          return false;
+        }
+      }
+
+      setLinks({
+        whatsapp_avisos_url: isValidUrl(data.data.whatsapp_avisos_url) ? data.data.whatsapp_avisos_url : '',
+        whatsapp_abierto_url: isValidUrl(data.data.whatsapp_abierto_url) ? data.data.whatsapp_abierto_url : ''
+      })
     } catch (err) {
       console.error('Error fetching links', err)
     }

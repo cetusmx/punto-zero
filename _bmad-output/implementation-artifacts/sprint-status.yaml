@@ -76,7 +76,7 @@ development_status:
   4-2-inactivate-collection-point-cascade-cancellation: done
   4-3-admin-user-management-list-search-block-edit: done
   4-4-superadmin-role-management: done
-  4-5-whatsapp-configuration-metrics-dashboard: backlog
+  4-5-whatsapp-configuration-metrics-dashboard: done
   epic-4-retrospective: optional
 
   # Epic 5: Exemption Program & Certificates

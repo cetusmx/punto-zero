@@ -1,8 +1,10 @@
 import { Router } from 'express';
-import { getWhatsAppLinks } from '../controllers/config-controller.js';
+import { getConfig, updateConfig } from '../controllers/config-controller.js';
+import { authenticate, authorizeAdmin } from '../../middleware/auth.js';
 
 const router = Router();
 
-router.get('/whatsapp-links', getWhatsAppLinks);
+router.get('/', authenticate, getConfig);
+router.put('/', authenticate, authorizeAdmin, updateConfig);
 
 export default router;
