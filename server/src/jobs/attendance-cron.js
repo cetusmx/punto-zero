@@ -1,6 +1,6 @@
 import cron from 'node-cron';
-import prisma from '../config/prisma-client.js';
-import { logger } from '../config/logger.js';
+import prisma from '../../config/prisma-client.js';
+import { logger } from '../../config/logger.js';
 
 export function initAttendanceJob() {
   // Every Saturday at 14:00 (America/Mexico_City)
