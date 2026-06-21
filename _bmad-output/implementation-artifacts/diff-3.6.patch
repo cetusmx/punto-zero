@@ -1,0 +1,662 @@
+diff --git a/_bmad-output/implementation-artifacts/sprint-status.yaml b/_bmad-output/implementation-artifacts/sprint-status.yaml
+index 4281b1b..a039e82 100644
+--- a/_bmad-output/implementation-artifacts/sprint-status.yaml
++++ b/_bmad-output/implementation-artifacts/sprint-status.yaml
+@@ -35,7 +35,7 @@
+ # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+ 
+ generated: 2026-06-07
+-last_updated: 2026-06-08
++last_updated: 2026-06-20
+ project: punto-zero
+ project_key: NOKEY
+ tracking_system: file-system
+@@ -67,7 +67,7 @@ development_status:
+   3-3-my-schedulings-attendance-history: done
+   3-4-autonomous-turno-cancellation: done
+   3-5-saturday-operations-default-attendance-faltas: done
+-  3-6-admin-saturday-turn-management-cancellations: backlog
++  3-6-admin-saturday-turn-management-cancellations: review
+   epic-3-retrospective: optional
+ 
+   # Epic 4: Collection Points & Admin Management
+diff --git a/client/src/pages/admin/AdminAgenda.jsx b/client/src/pages/admin/AdminAgenda.jsx
+index b881c96..f1de264 100644
+--- a/client/src/pages/admin/AdminAgenda.jsx
++++ b/client/src/pages/admin/AdminAgenda.jsx
+@@ -3,12 +3,15 @@ import {
+   Box, Typography, Grid, Card, CardContent, Table, TableBody,
+   TableCell, TableContainer, TableHead, TableRow, Paper, Chip,
+   IconButton, Button, Alert, CircularProgress, Stack, TextField,
+-  MenuItem
++  MenuItem, Checkbox, Dialog, DialogTitle, DialogContent,
++  DialogActions, Autocomplete
+ } from '@mui/material'
+ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+ import CancelIcon from '@mui/icons-material/Cancel'
+ import RefreshIcon from '@mui/icons-material/Refresh'
+-import { format, startOfWeek, addDays, isSaturday, parseISO } from 'date-fns'
++import PersonAddIcon from '@mui/icons-material/PersonAdd'
++import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
++import { format, startOfWeek, addDays, isSaturday } from 'date-fns'
+ import { es } from 'date-fns/locale'
+ import api from '../../lib/api'
+ 
+@@ -17,6 +20,7 @@ const STATUS_COLORS = {
+   Asistio: 'success',
+   Falta: 'error',
+   Cancelado: 'default',
++  Vacante: 'info',
+ }
+ 
+ export default function AdminAgenda() {
+@@ -24,6 +28,17 @@ export default function AdminAgenda() {
+   const [error, setError] = useState('')
+   const [turns, setTurns] = useState([])
+   
++  // Selection states for bulk actions
++  const [selectedIds, setSelectedIds] = useState([])
++  
++  // Replacement modal states
++  const [replacementOpen, setReplacementOpen] = useState(false)
++  const [replacementPoint, setReplacementPoint] = useState(null)
++  const [volunteers, setVolunteers] = useState([])
++  const [selectedVolunteer, setSelectedVolunteer] = useState(null)
++  const [modalLoading, setModalLoading] = useState(false)
++  const [modalError, setModalError] = useState('')
++
+   // Generate list of recent and future Saturdays
+   const [selectedDate, setSelectedDate] = useState(() => {
+     const today = new Date()
+@@ -33,6 +48,7 @@ export default function AdminAgenda() {
+ 
+   useEffect(() => {
+     fetchTurns()
++    setSelectedIds([]) // Reset selection on date change
+   }, [selectedDate])
+ 
+   async function fetchTurns() {
+@@ -57,7 +73,65 @@ export default function AdminAgenda() {
+     }
+   }
+ 
+-  // Generate 4 Saturdays (2 past, 2 future roughly)
++  async function handleCancelTurn(id) {
++    if (!window.confirm('¿Estás seguro de que deseas cancelar este turno?')) return
++    try {
++      await api.post(`/admin/agenda/turns/${id}/cancel`)
++      fetchTurns()
++    } catch (err) {
++      setError(err.response?.data?.error?.message || 'Error al cancelar el turno.')
++    }
++  }
++
++  async function handleBulkCancel() {
++    if (selectedIds.length === 0) return
++    if (!window.confirm(`¿Estás seguro de que deseas cancelar los ${selectedIds.length} turnos seleccionados?`)) return
++    try {
++      await api.post('/admin/agenda/turns/cancel-multiple', { ids: selectedIds })
++      setSelectedIds([])
++      fetchTurns()
++    } catch (err) {
++      setError(err.response?.data?.error?.message || 'Error al realizar la cancelación masiva.')
++    }
++  }
++
++  async function openReplacementModal(point) {
++    setReplacementPoint(point)
++    setReplacementOpen(true)
++    setSelectedVolunteer(null)
++    setModalLoading(true)
++    setModalError('')
++    try {
++      const { data } = await api.get(`/admin/users/eligible-volunteers?date=${selectedDate}`)
++      setVolunteers(data)
++    } catch (err) {
++      setModalError('Error al cargar la lista de voluntarios elegibles.')
++    } finally {
++      setModalLoading(false)
++    }
++  }
++
++  async function handleAssignReplacement() {
++    if (!selectedVolunteer || !replacementPoint) return
++    setModalLoading(true)
++    setModalError('')
++    try {
++      await api.post('/admin/agenda/turns/assign-replacement', {
++        pointId: replacementPoint.id,
++        saturdayDate: selectedDate,
++        userId: selectedVolunteer.id
++      })
++      setReplacementOpen(false)
++      setSelectedVolunteer(null)
++      fetchTurns()
++    } catch (err) {
++      setModalError(err.response?.data?.error?.message || 'Error al asignar el reemplazo.')
++    } finally {
++      setModalLoading(false)
++    }
++  }
++
++  // Generate 6 Saturdays (1 past, 5 future)
+   const saturdays = []
+   const today = new Date()
+   const baseSat = addDays(startOfWeek(today), -7) // Start from last week
+@@ -65,12 +139,24 @@ export default function AdminAgenda() {
+     saturdays.push(addDays(baseSat, i * 7))
+   }
+ 
++  // Check if select-all checkbox should be checked
++  const activeTurnsWithUser = turns.filter(t => t.user && t.status !== 'Cancelado')
++  const isAllSelected = activeTurnsWithUser.length > 0 && selectedIds.length === activeTurnsWithUser.length
++
++  const handleSelectAll = (e) => {
++    if (e.target.checked) {
++      setSelectedIds(activeTurnsWithUser.map(t => t.id))
++    } else {
++      setSelectedIds([])
++    }
++  }
++
+   return (
+     <Box>
+       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+         <Box>
+           <Typography variant="h4" sx={{ fontWeight: 700 }}>Gestión Sabatina</Typography>
+-          <Typography color="text.secondary">Control de asistencia y asignaciones</Typography>
++          <Typography color="text.secondary">Control de asistencia, cancelaciones y asignación de reemplazos</Typography>
+         </Box>
+         <IconButton onClick={fetchTurns} disabled={loading}>
+           <RefreshIcon />
+@@ -102,10 +188,39 @@ export default function AdminAgenda() {
+         <Grid item xs={12} md={9}>
+           {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '16px' }}>{error}</Alert>}
+ 
++          {selectedIds.length > 0 && (
++            <Card elevation={0} sx={{ mb: 2, bgcolor: 'error.50', borderRadius: '16px', border: '1px solid', borderColor: 'error.100' }}>
++              <CardContent sx={{ py: '12px !important', px: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
++                <Typography color="error.main" variant="body2" sx={{ fontWeight: 600 }}>
++                  {selectedIds.length} turno(s) seleccionado(s)
++                </Typography>
++                <Button
++                  size="small"
++                  color="error"
++                  variant="contained"
++                  startIcon={<DeleteSweepIcon />}
++                  onClick={handleBulkCancel}
++                  sx={{ borderRadius: '8px', textTransform: 'none' }}
++                >
++                  Cancelar Seleccionados
++                </Button>
++              </CardContent>
++            </Card>
++          )}
++
+           <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '24px', border: '1px solid', borderColor: 'divider' }}>
+             <Table>
+               <TableHead sx={{ bgcolor: 'grey.50' }}>
+                 <TableRow>
++                  <TableCell padding="checkbox">
++                    <Checkbox
++                      indeterminate={selectedIds.length > 0 && selectedIds.length < activeTurnsWithUser.length}
++                      checked={isAllSelected}
++                      onChange={handleSelectAll}
++                      size="small"
++                      disabled={activeTurnsWithUser.length === 0}
++                    />
++                  </TableCell>
+                   <TableCell sx={{ fontWeight: 700 }}>Voluntario</TableCell>
+                   <TableCell sx={{ fontWeight: 700 }}>Punto de Acopio</TableCell>
+                   <TableCell sx={{ fontWeight: 700 }}>Estatus</TableCell>
+@@ -115,22 +230,45 @@ export default function AdminAgenda() {
+               <TableBody>
+                 {loading ? (
+                   <TableRow>
+-                    <TableCell colSpan={4} align="center" sx={{ py: 8 }}>
++                    <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                       <CircularProgress size={32} />
+                     </TableCell>
+                   </TableRow>
+                 ) : turns.length === 0 ? (
+                   <TableRow>
+-                    <TableCell colSpan={4} align="center" sx={{ py: 8 }}>
+-                      <Typography color="text.disabled">No hay turnos registrados para esta fecha.</Typography>
++                    <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
++                      <Typography color="text.disabled">No hay puntos de acopio activos registrados.</Typography>
+                     </TableCell>
+                   </TableRow>
+                 ) : (
+                   turns.map((turn) => (
+                     <TableRow key={turn.id} hover>
++                      <TableCell padding="checkbox">
++                        {turn.user && turn.status !== 'Cancelado' && (
++                          <Checkbox
++                            checked={selectedIds.includes(turn.id)}
++                            onChange={(e) => {
++                              if (e.target.checked) {
++                                setSelectedIds(prev => [...prev, turn.id])
++                              } else {
++                                setSelectedIds(prev => prev.filter(id => id !== turn.id))
++                              }
++                            }}
++                            size="small"
++                          />
++                        )}
++                      </TableCell>
+                       <TableCell>
+-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{turn.user.name}</Typography>
+-                        <Typography variant="caption" color="text.secondary">{turn.user.phone}</Typography>
++                        {turn.user ? (
++                          <Box>
++                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{turn.user.name}</Typography>
++                            <Typography variant="caption" color="text.secondary">{turn.user.phone}</Typography>
++                          </Box>
++                        ) : (
++                          <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
++                            {turn.status === 'Cancelado' ? 'Cancelado (Sin asignar)' : 'Vacante (Sin reservar)'}
++                          </Typography>
++                        )}
+                       </TableCell>
+                       <TableCell>
+                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{turn.point.name}</Typography>
+@@ -146,28 +284,53 @@ export default function AdminAgenda() {
+                       </TableCell>
+                       <TableCell align="right">
+                         <Stack direction="row" spacing={1} justifyContent="flex-end">
+-                          {turn.status !== 'Asistio' && (
+-                            <Button 
+-                              size="small" 
+-                              variant="outlined" 
+-                              color="success" 
+-                              startIcon={<CheckCircleIcon />}
+-                              onClick={() => handleUpdateStatus(turn.id, 'Asistio')}
++                          {turn.user && turn.status !== 'Cancelado' ? (
++                            <>
++                              {turn.status !== 'Asistio' && (
++                                <Button 
++                                  size="small" 
++                                  variant="outlined" 
++                                  color="success" 
++                                  startIcon={<CheckCircleIcon />}
++                                  onClick={() => handleUpdateStatus(turn.id, 'Asistio')}
++                                  sx={{ borderRadius: '8px', textTransform: 'none' }}
++                                >
++                                  Asistencia
++                                </Button>
++                              )}
++                              {turn.status !== 'Falta' && (
++                                <Button 
++                                  size="small" 
++                                  variant="outlined" 
++                                  color="error" 
++                                  startIcon={<CancelIcon />}
++                                  onClick={() => handleUpdateStatus(turn.id, 'Falta')}
++                                  sx={{ borderRadius: '8px', textTransform: 'none' }}
++                                >
++                                  Falta
++                                </Button>
++                              )}
++                              <Button
++                                size="small"
++                                variant="outlined"
++                                color="warning"
++                                startIcon={<CancelIcon />}
++                                onClick={() => handleCancelTurn(turn.id)}
++                                sx={{ borderRadius: '8px', textTransform: 'none' }}
++                              >
++                                Cancelar
++                              </Button>
++                            </>
++                          ) : (
++                            <Button
++                              size="small"
++                              variant="contained"
++                              color="primary"
++                              startIcon={<PersonAddIcon />}
++                              onClick={() => openReplacementModal(turn.point)}
+                               sx={{ borderRadius: '8px', textTransform: 'none' }}
+                             >
+-                              Asistencia
+-                            </Button>
+-                          )}
+-                          {turn.status !== 'Falta' && (
+-                            <Button 
+-                              size="small" 
+-                              variant="outlined" 
+-                              color="error" 
+-                              startIcon={<CancelIcon />}
+-                              onClick={() => handleUpdateStatus(turn.id, 'Falta')}
+-                              sx={{ borderRadius: '8px', textTransform: 'none' }}
+-                            >
+-                              Falta
++                              Asignar Reemplazo
+                             </Button>
+                           )}
+                         </Stack>
+@@ -180,6 +343,59 @@ export default function AdminAgenda() {
+           </TableContainer>
+         </Grid>
+       </Grid>
++
++      {/* Replacement Assignment Modal */}
++      <Dialog 
++        open={replacementOpen} 
++        onClose={() => setReplacementOpen(false)} 
++        fullWidth 
++        maxWidth="xs" 
++        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
++      >
++        <DialogTitle sx={{ fontWeight: 700 }}>Asignar Reemplazo</DialogTitle>
++        <DialogContent>
++          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
++            Selecciona un voluntario elegible para asignar al punto <strong>{replacementPoint?.name}</strong> para el sábado <strong>{selectedDate}</strong>.
++          </Typography>
++          {modalError && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{modalError}</Alert>}
++          {modalLoading ? (
++            <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
++              <CircularProgress size={32} />
++            </Box>
++          ) : (
++            <Autocomplete
++              options={volunteers}
++              getOptionLabel={(option) => `${option.name} (${option.phone})`}
++              value={selectedVolunteer}
++              onChange={(event, newValue) => setSelectedVolunteer(newValue)}
++              renderInput={(params) => (
++                <TextField 
++                  {...params} 
++                  label="Buscar Voluntario" 
++                  variant="outlined" 
++                  size="small" 
++                  helperText="Solo se listan voluntarios habilitados y en estado Alta sin turnos este día"
++                />
++              )}
++              noOptionsText="No hay voluntarios elegibles disponibles"
++            />
++          )}
++        </DialogContent>
++        <DialogActions sx={{ px: 3, pb: 3 }}>
++          <Button onClick={() => setReplacementOpen(false)} color="inherit" sx={{ textTransform: 'none' }}>
++            Volver
++          </Button>
++          <Button 
++            onClick={handleAssignReplacement} 
++            variant="contained" 
++            color="primary" 
++            disabled={!selectedVolunteer || modalLoading}
++            sx={{ borderRadius: '12px', textTransform: 'none' }}
++          >
++            Asignar Reemplazo
++          </Button>
++        </DialogActions>
++      </Dialog>
+     </Box>
+   )
+ }
+diff --git a/server/src/controllers/admin-agenda-controller.js b/server/src/controllers/admin-agenda-controller.js
+index ef255f6..ef5dcbd 100644
+--- a/server/src/controllers/admin-agenda-controller.js
++++ b/server/src/controllers/admin-agenda-controller.js
+@@ -11,10 +11,15 @@ export async function getSaturdayTurns(req, res, next) {
+     const saturday = new Date(date);
+     saturday.setHours(12, 0, 0, 0);
+ 
+-    const turns = await prisma.scheduling.findMany({
+-      where: {
+-        saturdayDate: saturday
+-      },
++    // Get all active collection points
++    const activePoints = await prisma.collectionPoint.findMany({
++      where: { status: 'Activo' },
++      orderBy: { name: 'asc' }
++    });
++
++    // Get all schedulings for this Saturday
++    const schedulings = await prisma.scheduling.findMany({
++      where: { saturdayDate: saturday },
+       include: {
+         user: {
+           select: {
+@@ -26,13 +31,34 @@ export async function getSaturdayTurns(req, res, next) {
+           }
+         },
+         point: true
+-      },
+-      orderBy: {
+-        point: { name: 'asc' }
+       }
+     });
+ 
+-    res.json(turns);
++    // Merge points and schedulings
++    const result = activePoints.map(point => {
++      const scheduling = schedulings.find(s => s.pointId === point.id);
++      if (scheduling) {
++        return {
++          id: scheduling.id,
++          pointId: point.id,
++          point: point,
++          user: scheduling.user,
++          status: scheduling.status,
++          saturdayDate: scheduling.saturdayDate
++        };
++      } else {
++        return {
++          id: `vacant-${point.id}`,
++          pointId: point.id,
++          point: point,
++          user: null,
++          status: 'Vacante',
++          saturdayDate: saturday
++        };
++      }
++    });
++
++    res.json(result);
+   } catch (err) {
+     next(err);
+   }
+@@ -71,3 +97,175 @@ export async function updateTurnStatus(req, res, next) {
+     next(err);
+   }
+ }
++
++export async function cancelSaturdayTurn(req, res, next) {
++  try {
++    const { id } = req.params;
++
++    const turn = await prisma.scheduling.findUnique({
++      where: { id: parseInt(id) }
++    });
++
++    if (!turn) {
++      return res.status(404).json({ error: { message: 'Turno no encontrado.' } });
++    }
++
++    const updated = await prisma.scheduling.update({
++      where: { id: parseInt(id) },
++      data: {
++        status: 'Cancelado',
++        cancelledAt: new Date(),
++        cancellationType: 'Admin'
++      }
++    });
++
++    res.json({ message: 'Turno cancelado exitosamente.', turn: updated });
++  } catch (err) {
++    next(err);
++  }
++}
++
++export async function cancelMultipleTurns(req, res, next) {
++  try {
++    const { ids } = req.body;
++
++    if (!Array.isArray(ids) || ids.length === 0) {
++      return res.status(400).json({ error: { message: 'Se requiere un arreglo de IDs.' } });
++    }
++
++    const intIds = ids.map(id => parseInt(id));
++
++    await prisma.scheduling.updateMany({
++      where: {
++        id: { in: intIds }
++      },
++      data: {
++        status: 'Cancelado',
++        cancelledAt: new Date(),
++        cancellationType: 'Admin'
++      }
++    });
++
++    res.json({ message: 'Turnos cancelados exitosamente.' });
++  } catch (err) {
++    next(err);
++  }
++}
++
++export async function getEligibleVolunteers(req, res, next) {
++  try {
++    const { date } = req.query;
++
++    if (!date) {
++      return res.status(400).json({ error: { message: 'Se requiere una fecha (YYYY-MM-DD).' } });
++    }
++
++    const targetDate = new Date(date);
++    targetDate.setHours(12, 0, 0, 0);
++
++    const activeUsers = await prisma.user.findMany({
++      where: {
++        role: 'volunteer',
++        status: 'Alta',
++        access: 'Habilitado',
++        NOT: {
++          schedulings: {
++            some: {
++              saturdayDate: targetDate,
++              status: { in: ['Pendiente', 'Asistio'] }
++            }
++          }
++        }
++      },
++      select: {
++        id: true,
++        name: true,
++        phone: true,
++        email: true
++      },
++      orderBy: {
++        name: 'asc'
++      }
++    });
++
++    res.json(activeUsers);
++  } catch (err) {
++    next(err);
++  }
++}
++
++export async function assignReplacementTurn(req, res, next) {
++  try {
++    const { pointId, saturdayDate, userId } = req.body;
++
++    if (!pointId || !saturdayDate || !userId) {
++      return res.status(400).json({ error: { message: 'Faltan parámetros requeridos (pointId, saturdayDate, userId).' } });
++    }
++
++    const date = new Date(saturdayDate);
++    date.setHours(12, 0, 0, 0);
++
++    const user = await prisma.user.findUnique({
++      where: { id: parseInt(userId) }
++    });
++
++    if (!user || user.role !== 'volunteer' || user.status !== 'Alta' || user.access !== 'Habilitado') {
++      return res.status(400).json({ error: { message: 'El usuario no es elegible para asignación.' } });
++    }
++
++    const userAlreadyScheduled = await prisma.scheduling.findFirst({
++      where: {
++        userId: parseInt(userId),
++        saturdayDate: date,
++        status: { in: ['Pendiente', 'Asistio'] }
++      }
++    });
++
++    if (userAlreadyScheduled) {
++      return res.status(400).json({ error: { message: 'El usuario ya tiene un turno activo para este sábado.' } });
++    }
++
++    const existing = await prisma.scheduling.findUnique({
++      where: {
++        pointId_saturdayDate: {
++          pointId: parseInt(pointId),
++          saturdayDate: date
++        }
++      }
++    });
++
++    let turn;
++    if (existing) {
++      if (existing.status === 'Cancelado') {
++        turn = await prisma.scheduling.update({
++          where: { id: existing.id },
++          data: {
++            userId: parseInt(userId),
++            status: 'Asistio',
++            cancelledAt: null,
++            cancellationType: null,
++            acceptedTerms: true
++          },
++          include: { user: true, point: true }
++        });
++      } else {
++        return res.status(409).json({ error: { message: 'El espacio ya está reservado por un voluntario activo.' } });
++      }
++    } else {
++      turn = await prisma.scheduling.create({
++        data: {
++          userId: parseInt(userId),
++          pointId: parseInt(pointId),
++          saturdayDate: date,
++          status: 'Asistio',
++          acceptedTerms: true
++        },
++        include: { user: true, point: true }
++      });
++    }
++
++    res.status(201).json({ message: 'Reemplazo asignado exitosamente.', turn });
++  } catch (err) {
++    next(err);
++  }
++}
+diff --git a/server/src/routes/admin-routes.js b/server/src/routes/admin-routes.js
+index dab735d..9225d4a 100644
+--- a/server/src/routes/admin-routes.js
++++ b/server/src/routes/admin-routes.js
+@@ -1,10 +1,21 @@
+ import { Router } from 'express';
+-import { getSaturdayTurns, updateTurnStatus } from '../controllers/admin-agenda-controller.js';
++import {
++  getSaturdayTurns,
++  updateTurnStatus,
++  cancelSaturdayTurn,
++  cancelMultipleTurns,
++  getEligibleVolunteers,
++  assignReplacementTurn
++} from '../controllers/admin-agenda-controller.js';
+ import { authenticate, authorizeAdmin } from '../../middleware/auth.js';
+ 
+ const router = Router();
+ 
+ router.get('/agenda/turns', authenticate, authorizeAdmin, getSaturdayTurns);
+ router.patch('/agenda/turns/:id/status', authenticate, authorizeAdmin, updateTurnStatus);
++router.post('/agenda/turns/:id/cancel', authenticate, authorizeAdmin, cancelSaturdayTurn);
++router.post('/agenda/turns/cancel-multiple', authenticate, authorizeAdmin, cancelMultipleTurns);
++router.get('/users/eligible-volunteers', authenticate, authorizeAdmin, getEligibleVolunteers);
++router.post('/agenda/turns/assign-replacement', authenticate, authorizeAdmin, assignReplacementTurn);
+ 
+ export default router;

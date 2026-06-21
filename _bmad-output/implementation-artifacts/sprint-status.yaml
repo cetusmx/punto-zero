@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-07
-last_updated: 2026-06-08
+last_updated: 2026-06-20
 project: punto-zero
 project_key: NOKEY
 tracking_system: file-system
@@ -67,12 +67,12 @@ development_status:
   3-3-my-schedulings-attendance-history: done
   3-4-autonomous-turno-cancellation: done
   3-5-saturday-operations-default-attendance-faltas: done
-  3-6-admin-saturday-turn-management-cancellations: backlog
+  3-6-admin-saturday-turn-management-cancellations: done
   epic-3-retrospective: optional
 
   # Epic 4: Collection Points & Admin Management
-  epic-4: backlog
-  4-1-collection-points-crud-saturday-exceptions: backlog
+  epic-4: in-progress
+  4-1-collection-points-crud-saturday-exceptions: ready-for-dev
   4-2-inactivate-collection-point-cascade-cancellation: backlog
   4-3-admin-user-management-list-search-block-edit: backlog
   4-4-superadmin-role-management: backlog

@@ -18,3 +18,9 @@
 - No JWT server-side verify middleware — pre-existing architectural gap
 - JWT payload missing access/status for revocation — requires auth middleware
 - `isAuthenticated = !!token` doesn't check token expiry — pre-existing pattern
+
+## Deferred from: code review of 3-6-admin-saturday-turn-management-cancellations (2026-06-21)
+
+- Unpaginated Data Firehose in getEligibleVolunteers [server/src/controllers/admin-agenda-controller.js]
+- Race Conditions in Replacement Logic [server/src/controllers/admin-agenda-controller.js:604]
+- Poor Error Handling for Partial Failures [client/src/pages/admin/AdminAgenda.jsx]
