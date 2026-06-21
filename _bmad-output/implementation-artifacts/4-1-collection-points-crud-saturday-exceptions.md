@@ -1,6 +1,6 @@
 # Story 4.1: Collection Points CRUD & Saturday Exceptions
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -33,36 +33,36 @@ So that I can manage the volunteer locations and ensure accurate agenda scheduli
 ## Tasks / Subtasks
 
 ### Server-Side (Express + Prisma)
-- [ ] **Controller: `collection-points-controller.js`**
+- [x] **Controller: `collection-points-controller.js`**
   - Create the controller to handle CRUD operations.
-- [ ] **Endpoint: List Points (`GET /api/admin/collection-points`)**
+- [x] **Endpoint: List Points (`GET /api/admin/collection-points`)**
   - Return all points ordered by name, optionally paginated.
-- [ ] **Endpoint: Create Point (`POST /api/admin/collection-points`)**
+- [x] **Endpoint: Create Point (`POST /api/admin/collection-points`)**
   - Accept point details and create a new record.
-- [ ] **Endpoint: Edit Point (`PUT /api/admin/collection-points/:id`)**
+- [x] **Endpoint: Edit Point (`PUT /api/admin/collection-points/:id`)**
   - Update point details.
-- [ ] **Endpoint: Add Exception (`POST /api/admin/collection-points/:id/exceptions`)**
+- [x] **Endpoint: Add Exception (`POST /api/admin/collection-points/:id/exceptions`)**
   - Receive a `date` (YYYY-MM-DD) and optional `reason`.
   - Validate date is a Saturday and parse to noon CDMX time.
   - Upsert into `UnavailableDate` model (use the Prisma `UnavailableDate` model).
   - Search for any active `Scheduling` (`status: 'Pendiente'`) on that date for that point.
   - Cancel these schedulings: `status: 'Cancelado'`, `cancellationType: 'Admin'`, `cancelledAt: new Date()`.
   - Create `NotificationBadge` for affected users: "Punto de acopio no disponible" with explanation.
-- [ ] **Endpoint: List Exceptions (`GET /api/admin/collection-points/:id/exceptions`)**
+- [x] **Endpoint: List Exceptions (`GET /api/admin/collection-points/:id/exceptions`)**
   - Return all `UnavailableDate` records for the point, ordered by date.
-- [ ] **Endpoint: Remove Exception (`DELETE /api/admin/collection-points/:id/exceptions/:date`)**
+- [x] **Endpoint: Remove Exception (`DELETE /api/admin/collection-points/:id/exceptions/:date`)**
   - Delete the `UnavailableDate` record.
-- [ ] **Router: `server/src/routes/admin-routes.js`**
+- [x] **Router: `server/src/routes/admin-routes.js`**
   - Register the new endpoints with `authenticate` and `authorizeAdmin` middleware.
 
 ### Client-Side (React + MUI)
-- [ ] **View: Collection Points List (`client/src/pages/admin/CollectionPoints.jsx`)**
+- [x] **View: Collection Points List (`client/src/pages/admin/CollectionPoints.jsx`)**
   - Render a data table listing all points with their status and actions (Edit, Manage Exceptions).
   - Include a "Crear Punto" button.
-- [ ] **Component: Collection Point Form Dialog**
+- [x] **Component: Collection Point Form Dialog**
   - Form fields: `name`, `colonia`, `address`, `lat`, `lng`, `horario`.
   - Handles both creation and editing.
-- [ ] **Component: Exceptions Management Dialog**
+- [x] **Component: Exceptions Management Dialog**
   - Display a date picker (restricted to Saturdays).
   - "Agregar Excepción" button.
   - List of currently added exceptions with a "Delete" icon to remove them.
@@ -126,10 +126,23 @@ await Promise.all(badgePromises);
 ## Dev Agent Record
 
 ### Agent Model Used
-(To be filled)
+Amelia (Gemini CLI via Antigravity)
 
 ### Completion Notes List
-(To be filled)
+- Implemented `collection-points-controller.js` to handle CRUD of points and exceptions.
+- Updated `agenda-controller.js` to block volunteer scheduling via API if a point has an exception on the target Saturday.
+- Created UI in `client/src/pages/admin/AdminPoints.jsx` (replacing the requested `CollectionPoints.jsx` name to match standard project layout routing) containing the data table, `PointFormDialog`, and `ExceptionsDialog`.
+- Verified cancellation of existing turns and `NotificationBadge` creation is correctly applied when an admin inserts a new `UnavailableDate` exception.
 
 ### File List
-(To be filled)
+- `server/src/controllers/collection-points-controller.js`
+- `server/src/routes/admin-routes.js`
+- `server/src/controllers/agenda-controller.js`
+- `client/src/pages/admin/AdminPoints.jsx`
+
+### Review Findings
+- [x] [Review][Patch] **CRITICAL: Server-Side Timezone Collapse in Exception Creation** - Fixed by parsing `YYYY-MM-DD` strings explicitly into `[year, month, day]` and constructing `new Date` to enforce local timezone context at exactly 12:00:00 without relying on native V8 ISO parsing.
+- [x] [Review][Patch] **HIGH: Brittle Exact-Match Date Trap in Agenda** - Fixed by applying the exact same local split parsing logic in `agenda-controller.js` `createScheduling` to ensure identical byte-level database querying.
+- [x] [Review][Patch] **HIGH: Shattered State (Missing Database Transactions)** - Fixed by wrapping the 4 operations (upsert exception, find schedulings, cancel schedulings, create badges) inside a `$transaction`.
+- [x] [Review][Dismissed] **MEDIUM: The "Inactivo" Bypass** - Dismissed as hallucinated/pre-existing feature. `agenda-controller.js` already explicitly verifies `if (!point || point.status !== 'Activo')` directly before proceeding.
+- [x] [Review][Patch] **LOW: Client-Side Timezone Drift on Deletion** - Fixed in `AdminPoints.jsx` by extracting `YYYY-MM-DD` directly via `date.split('T')[0]` string manipulation instead of volatile client `Date` formatting.

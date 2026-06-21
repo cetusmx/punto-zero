@@ -72,7 +72,7 @@ development_status:
 
   # Epic 4: Collection Points & Admin Management
   epic-4: in-progress
-  4-1-collection-points-crud-saturday-exceptions: ready-for-dev
+  4-1-collection-points-crud-saturday-exceptions: done
   4-2-inactivate-collection-point-cascade-cancellation: backlog
   4-3-admin-user-management-list-search-block-edit: backlog
   4-4-superadmin-role-management: backlog

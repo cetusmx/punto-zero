@@ -66,14 +66,27 @@ export async function createScheduling(req, res, next) {
       return res.status(400).json({ error: { message: 'Debes aceptar el compromiso de asistencia.' } });
     }
 
-    const date = new Date(saturdayDate);
-    // Force set time to noon to avoid timezone shift issues during comparison
-    date.setHours(12, 0, 0, 0);
+    const [year, month, day] = saturdayDate.split('-');
+    const date = new Date(year, month - 1, day, 12, 0, 0, 0);
 
     // 1. Check if the point is active
     const point = await prisma.collectionPoint.findUnique({ where: { id: parseInt(pointId) } });
     if (!point || point.status !== 'Activo') {
       return res.status(400).json({ error: { message: 'El punto de acopio no está disponible.' } });
+    }
+
+    // 1.5 Check if the point has an exception for this Saturday
+    const exception = await prisma.unavailableDate.findUnique({
+      where: {
+        pointId_saturdayDate: {
+          pointId: parseInt(pointId),
+          saturdayDate: date
+        }
+      }
+    });
+
+    if (exception) {
+      return res.status(400).json({ error: { message: 'Este punto de acopio no está disponible para la fecha seleccionada (inhabilitado).' } });
     }
 
     // 2. Check if point is already taken for that date
