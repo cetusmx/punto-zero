@@ -52,21 +52,70 @@ export async function updateCollectionPoint(req, res, next) {
       return res.status(400).json({ error: { message: 'ID de punto inválido.' } });
     }
 
-    const point = await prisma.collectionPoint.update({
-      where: { id: pointId },
-      data: {
-        name,
-        colonia,
-        address,
-        lat: lat ? parseFloat(lat) : null,
-        lng: lng ? parseFloat(lng) : null,
-        horario,
-        status
+    const result = await prisma.$transaction(async (tx) => {
+      const currentPoint = await tx.collectionPoint.findUnique({ where: { id: pointId } });
+      if (!currentPoint) {
+        throw new Error('PUNTO_NO_ENCONTRADO');
       }
+
+      const isDeactivating = currentPoint.status !== 'Inactivo' && status === 'Inactivo';
+
+      const point = await tx.collectionPoint.update({
+        where: { id: pointId },
+        data: {
+          name,
+          colonia,
+          address,
+          lat: lat ? parseFloat(lat) : null,
+          lng: lng ? parseFloat(lng) : null,
+          horario,
+          status
+        }
+      });
+
+      if (isDeactivating) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const affected = await tx.scheduling.findMany({
+          where: {
+            pointId,
+            saturdayDate: { gte: today },
+            status: 'Pendiente'
+          }
+        });
+
+        if (affected.length > 0) {
+          await tx.scheduling.updateMany({
+            where: { id: { in: affected.map(s => s.id) } },
+            data: {
+              status: 'Cancelado',
+              cancellationType: 'Admin',
+              cancelledAt: new Date()
+            }
+          });
+
+          const uniqueUserIds = [...new Set(affected.map(s => s.userId))];
+
+          await tx.notificationBadge.createMany({
+            data: uniqueUserIds.map(userId => ({
+              userId,
+              category: 'system',
+              title: 'Punto de acopio inhabilitado',
+              message: `El punto de acopio ${point.name} ha sido inhabilitado de forma permanente. Tus próximas asistencias agendadas en esta ubicación han sido canceladas.`
+            }))
+          });
+        }
+      }
+
+      return point;
     });
 
-    res.json(point);
+    res.json(result);
   } catch (err) {
+    if (err.message === 'PUNTO_NO_ENCONTRADO') {
+      return res.status(404).json({ error: { message: 'Punto no encontrado.' } });
+    }
     next(err);
   }
 }

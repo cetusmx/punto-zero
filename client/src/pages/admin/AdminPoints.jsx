@@ -51,6 +51,14 @@ function PointFormDialog({ open, onClose, point, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    const isDeactivating = point && point.status !== 'Inactivo' && formData.status === 'Inactivo'
+    if (isDeactivating) {
+      if (!window.confirm('¿Seguro que quieres inhabilitar el punto? Se cancelarán reservas activas y se notificará a los usuarios afectados.')) {
+        return
+      }
+    }
+
     setLoading(true)
     setError('')
     try {
@@ -76,6 +84,11 @@ function PointFormDialog({ open, onClose, point, onSaved }) {
         </DialogTitle>
         <DialogContent dividers>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {point && point.status !== 'Inactivo' && formData.status === 'Inactivo' && (
+            <Alert severity="warning" sx={{ mb: 2, borderRadius: '12px' }}>
+              Atención: Al inhabilitar este punto, todas las reservas futuras para esta ubicación serán canceladas y los usuarios serán notificados.
+            </Alert>
+          )}
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField fullWidth required label="Nombre" name="name" value={formData.name} onChange={handleChange} size="small" />
