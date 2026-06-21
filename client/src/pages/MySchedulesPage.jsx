@@ -13,6 +13,7 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import { format, isAfter, startOfDay, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import api from '../lib/api'
+import ExemptionProgress from '../components/ExemptionProgress'
 
 const STATUS_COLORS = {
   Pendiente: { color: 'warning', label: 'Pendiente' },
@@ -158,6 +159,8 @@ export default function MySchedulesPage() {
       {success && <Alert severity="success" sx={{ mb: 4, borderRadius: '16px' }}>{success}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 4, borderRadius: '16px' }}>{error}</Alert>}
       {cancelLoading && <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}><CircularProgress size={20} /> <Typography variant="body2">Cancelando turno...</Typography></Box>}
+
+      <ExemptionProgress key={turns.map(t => t.status).join('-')} />
 
       <Grid container spacing={4}>
         {/* Upcoming Turns */}

@@ -1,4 +1,15 @@
 import prisma from '../../config/prisma-client.js';
+import { calculateUserProgress } from '../services/exemption-service.js';
+
+export async function getProgress(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const progress = await calculateUserProgress(userId);
+    res.json(progress);
+  } catch (err) {
+    next(err);
+  }
+}
 
 export async function getAvailableSlots(req, res, next) {
   try {

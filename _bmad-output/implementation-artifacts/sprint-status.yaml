@@ -61,7 +61,7 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: Agenda, Scheduling & Saturday Operations
-  epic-3: in-progress
+  epic-3: done
   3-1-agenda-view-with-filters: done
   3-2-schedule-a-turno: done
   3-3-my-schedulings-attendance-history: done
@@ -71,7 +71,7 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Collection Points & Admin Management
-  epic-4: in-progress
+  epic-4: done
   4-1-collection-points-crud-saturday-exceptions: done
   4-2-inactivate-collection-point-cascade-cancellation: done
   4-3-admin-user-management-list-search-block-edit: done
@@ -80,8 +80,8 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Exemption Program & Certificates
-  epic-5: backlog
-  5-1-exemption-program-activation-progress-tracking: backlog
+  epic-5: in-progress
+  5-1-exemption-program-activation-progress-tracking: done
   5-2-3-falta-reset-logic: backlog
   5-3-qr-exencion-certificate: backlog
   5-4-qr-reconocimiento-expired-qr-handling: backlog
