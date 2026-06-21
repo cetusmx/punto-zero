@@ -11,12 +11,15 @@ import PeopleIcon from '@mui/icons-material/People'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import BadgeIcon from '@mui/icons-material/Badge'
 import SettingsIcon from '@mui/icons-material/Settings'
+import SecurityIcon from '@mui/icons-material/Security'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import AdminPoints from '../pages/admin/AdminPoints'
 import AdminUsers from '../pages/admin/AdminUsers'
 import AdminAgenda from '../pages/admin/AdminAgenda'
 import AdminCertificates from '../pages/admin/AdminCertificates'
 import AdminConfig from '../pages/admin/AdminConfig'
+import AdminAdministrators from '../pages/admin/AdminAdministrators'
+import { useAuth } from '../context/AuthContext'
 
 const DRAWER_WIDTH = 240
 
@@ -31,6 +34,12 @@ const menuItems = [
 
 export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { user } = useAuth()
+
+  const currentMenuItems = [...menuItems]
+  if (user?.role === 'superadmin') {
+    currentMenuItems.push({ label: 'Administradores', icon: <SecurityIcon />, path: '/admin/administradores' })
+  }
 
   const drawer = (
     <Box>
@@ -38,7 +47,7 @@ export default function AdminLayout() {
         <Typography variant="h6">punto-zero</Typography>
       </Toolbar>
       <List>
-        {menuItems.map((item) => (
+        {currentMenuItems.map((item) => (
           <ListItem key={item.path} disablePadding>
             <ListItemButton component={NavLink} to={item.path}>
               <ListItemIcon>{item.icon}</ListItemIcon>
@@ -85,6 +94,7 @@ export default function AdminLayout() {
           <Route path="agenda" element={<AdminAgenda />} />
           <Route path="certificados" element={<AdminCertificates />} />
           <Route path="config" element={<AdminConfig />} />
+          {user?.role === 'superadmin' && <Route path="administradores" element={<AdminAdministrators />} />}
         </Routes>
       </Box>
     </Box>

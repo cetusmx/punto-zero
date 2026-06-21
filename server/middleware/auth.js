@@ -25,3 +25,10 @@ export function authorizeAdmin(req, res, next) {
   }
   next();
 }
+
+export function authorizeSuperAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'superadmin') {
+    return res.status(403).json({ error: { message: 'No tienes permisos de superadmin para realizar esta acción.' } });
+  }
+  next();
+}
