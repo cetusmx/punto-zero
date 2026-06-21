@@ -49,10 +49,10 @@ So that I can control who has administrative access.
   - Create `authorizeSuperAdmin` middleware to strictly check `req.user.role === 'superadmin'`.
 - [ ] **Superadmin Controller (`server/src/controllers/superadmin-controller.js`)**
   - Implement **`GET /api/admin/administrators`**: Fetch all users where `role` in `['admin', 'superadmin']`.
-  - Implement **`GET /api/admin/administrators/eligible-users`**: Fetch users with `role === 'volunteer'` to populate the promotion search autocomplete.
+  - Implement **`GET /api/admin/administrators/eligible-users`**: Fetch users with `role === 'volunteer'` to populate the promotion search autocomplete. **Must accept a `?q=` search query and limit results to prevent performance issues.**
   - Implement **`POST /api/admin/administrators/:id/promote`**: Update a user's role to `'admin'`.
   - Implement **`POST /api/admin/administrators/:id/demote`**: Update an admin's role to `'volunteer'`. Validate `req.user.id !== parseInt(req.params.id)` to prevent self-demotion.
-  - Implement **`POST /api/admin/administrators/:id/block`**: Update an admin's access to `'Bloqueado'` (reuse existing `UserAccess` logic). Validate `req.user.id !== parseInt(req.params.id)`.
+  - Implement **`POST /api/admin/administrators/:id/block`**: Accept an `{ action: 'block' | 'unblock' }` payload to update an admin's access to `'Bloqueado'` or `'Habilitado'`. Validate `req.user.id !== parseInt(req.params.id)`.
 - [ ] **Superadmin Routes (`server/src/routes/admin-routes.js`)**
   - Register the new endpoints using `authenticate` and `authorizeSuperAdmin` middleware.
 
@@ -65,7 +65,7 @@ So that I can control who has administrative access.
   - Include row actions: "Degradar a voluntario", "Bloquear/Desbloquear". Disable these actions for the row corresponding to the logged-in user (`user.id`).
   - Add a "Promover Usuario" button that opens an assignment modal.
 - [ ] **Promote User Modal (`client/src/pages/admin/AdminAdministrators.jsx`)**
-  - Implement a modal with an MUI `<Autocomplete>` that searches for eligible volunteers (`/api/admin/administrators/eligible-users`).
+  - Implement a modal with an MUI `<Autocomplete>` that asynchronously searches for eligible volunteers (`/api/admin/administrators/eligible-users?q=`) using a debounced input.
   - Confirming the modal calls the `promoteToAdmin` API and refreshes the table.
 - [ ] **API Service (`client/src/services/admin.js`)**
   - Add new API methods: `getAdministrators()`, `getEligibleUsersForAdmin()`, `promoteToAdmin(userId)`, `demoteToVolunteer(userId)`, `toggleAdminBlock(userId)`.
@@ -79,6 +79,7 @@ So that I can control who has administrative access.
 ### Security Guardrails
 - **CRITICAL: Self-Modification:** You MUST prevent superadmins from altering their own role or block status. If a superadmin demotes or blocks themselves, it could result in zero superadmins in the system, bricking admin control. Both the UI (disable action buttons where `row.id === user.id`) and the API (return 403 if `req.user.id === parseInt(req.params.id)`) must strictly enforce this.
 - **Middleware Usage:** Ensure ALL new endpoints are protected by `authenticate` followed by the newly created `authorizeSuperAdmin` middleware. Do not rely on `authorizeAdmin` for these routes.
+- **Clarification on Hard Deletions:** PRD FR-28 requests the ability to "eliminar admins". Hard deletion is intentionally omitted in favor of role demotion/blocking to preserve referential integrity (volunteer history).
 
 ### Files Being Modified
 - `server/middleware/auth.js`: Adding the `authorizeSuperAdmin` exported function.
