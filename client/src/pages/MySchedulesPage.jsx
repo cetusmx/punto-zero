@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box, Typography, Grid, Card, CardContent, Stack, Chip, Button, 
-  CircularProgress, Alert, Divider, alpha, Dialog, DialogTitle,
+  CircularProgress, Alert, alpha, Dialog, DialogTitle,
   DialogContent, DialogContentText, DialogActions
 } from '@mui/material'
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
@@ -43,7 +42,7 @@ export default function MySchedulesPage() {
     try {
       const { data } = await api.get('/agenda/my-turns')
       setTurns(data)
-    } catch (err) {
+    } catch {
       setError('Error al cargar tus turnos. Intenta de nuevo.')
     } finally {
       setLoading(false)

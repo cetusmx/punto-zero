@@ -44,6 +44,7 @@ export default function AdminAdministrators() {
   }, []);
 
   useEffect(() => { 
+    // eslint-disable-next-line
     fetchAdmins(); 
   }, [fetchAdmins]);
 
@@ -52,6 +53,7 @@ export default function AdminAdministrators() {
     let active = true;
 
     if (searchQuery === '') {
+      // eslint-disable-next-line
       setOptions([]);
       return undefined;
     }

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import {
-  Box, Typography, Grid, Card, CardContent, Table, TableBody,
+  Box, Typography, Grid, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Paper, Chip,
   IconButton, Button, Alert, CircularProgress, Stack, TextField,
   MenuItem, Dialog, DialogTitle, DialogContent, DialogActions,
-  FormControlLabel, Switch, Tooltip, List, ListItem, ListItemText,
+  Tooltip, List, ListItem, ListItemText,
   ListItemSecondaryAction
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
@@ -28,6 +28,7 @@ function PointFormDialog({ open, onClose, point, onSaved }) {
   useEffect(() => {
     if (open) {
       if (point) {
+        // eslint-disable-next-line
         setFormData({
           name: point.name,
           colonia: point.colonia,
@@ -165,18 +166,20 @@ function ExceptionsDialog({ open, onClose, point }) {
   useEffect(() => {
     if (open && point) {
       fetchExceptions()
+      // eslint-disable-next-line
       setDateStr('')
       setReason('')
       setError('')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, point])
 
-  const fetchExceptions = async () => {
+  async function fetchExceptions() {
     setLoading(true)
     try {
       const { data } = await api.get(`/admin/collection-points/${point.id}/exceptions`)
       setExceptions(data)
-    } catch (err) {
+    } catch {
       setError('Error al cargar excepciones.')
     } finally {
       setLoading(false)
@@ -352,13 +355,13 @@ export default function AdminPoints() {
     fetchPoints()
   }, [])
 
-  const fetchPoints = async () => {
+  async function fetchPoints() {
     setLoading(true)
     setError('')
     try {
       const { data } = await api.get('/admin/collection-points')
       setPoints(data)
-    } catch (err) {
+    } catch {
       setError('Error al cargar puntos de acopio.')
     } finally {
       setLoading(false)

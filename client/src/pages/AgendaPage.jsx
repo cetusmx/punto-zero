@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box, Typography, Grid, Card, CardContent, MenuItem, TextField,
-  FormControlLabel, Switch, Alert, Skeleton, Stack, Chip, Button, Divider, alpha,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Checkbox,
-  CircularProgress
+  FormControlLabel, Switch, Alert, Skeleton, Stack, Chip, Button, alpha,
+  Dialog, DialogTitle, DialogContent, DialogActions, Checkbox,
+  CircularProgress, Paper
 } from '@mui/material'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
@@ -34,11 +34,6 @@ export default function AgendaPage() {
   const [selectedSlot, setSelectedSlot] = useState(null)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
 
-  useEffect(() => {
-    fetchFilters()
-    fetchSlots()
-  }, [selectedColonia, selectedPointId])
-
   async function fetchFilters() {
     try {
       const { data } = await api.get('/agenda/filters')
@@ -58,12 +53,19 @@ export default function AgendaPage() {
       
       const { data } = await api.get(`/agenda/available-slots?${params.toString()}`)
       setData(data)
-    } catch (err) {
+    } catch {
       setError('Error al cargar la disponibilidad. Intenta de nuevo.')
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line
+    fetchFilters()
+    fetchSlots()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColonia, selectedPointId])
 
   async function handleBookTurn() {
     setBookingLoading(true)

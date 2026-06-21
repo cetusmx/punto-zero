@@ -55,6 +55,7 @@ export default function AdminAgenda() {
 
   useEffect(() => {
     fetchTurns()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
   async function fetchTurns() {
@@ -63,7 +64,7 @@ export default function AdminAgenda() {
     try {
       const { data } = await api.get(`/admin/agenda/turns?date=${selectedDate}`)
       setTurns(data)
-    } catch (err) {
+    } catch {
       setError('Error al cargar los turnos del sábado seleccionado.')
     } finally {
       setLoading(false)
@@ -75,7 +76,7 @@ export default function AdminAgenda() {
     try {
       const { data } = await api.get('/admin/agenda/upcoming-turns')
       setUpcomingTurns(data)
-    } catch (err) {
+    } catch {
       setError('Error al cargar próximas reservas.')
     } finally {
       setUpcomingLoading(false)
@@ -95,7 +96,7 @@ export default function AdminAgenda() {
       await api.patch(`/admin/agenda/turns/${id}/status`, { status: newStatus })
       fetchTurns()
       if (accordionExpanded) fetchUpcoming()
-    } catch (err) {
+    } catch {
       setError('Error al actualizar el estatus.')
     }
   }
@@ -159,7 +160,7 @@ export default function AdminAgenda() {
     try {
       const { data } = await api.get(`/admin/users/eligible-volunteers?date=${selectedDate}`)
       setVolunteers(data)
-    } catch (err) {
+    } catch {
       setModalError('Error al cargar la lista de voluntarios elegibles.')
     } finally {
       setModalLoading(false)

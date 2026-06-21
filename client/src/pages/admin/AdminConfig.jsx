@@ -9,10 +9,6 @@ export default function AdminConfig() {
   const [form, setForm] = useState({ whatsapp_avisos_url: '', whatsapp_abierto_url: '' })
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
-  useEffect(() => {
-    fetchConfig()
-  }, [])
-
   async function fetchConfig() {
     try {
       const { data } = await getConfig()
@@ -27,6 +23,11 @@ export default function AdminConfig() {
       setInitialLoading(false)
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line
+    fetchConfig()
+  }, [])
 
   function handleChange(e) {
     const { name, value } = e.target

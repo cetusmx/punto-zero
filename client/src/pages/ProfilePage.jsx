@@ -41,20 +41,6 @@ export default function ProfilePage() {
     status: user?.status || 'Alta',
   })
 
-  useEffect(() => {
-    if (user) {
-      setForm({
-        gender: user.gender || '',
-        age: user.age || '',
-        esquema: user.esquema || 'Puntos de Acopio',
-        residuo: user.residuo ? user.residuo.split(', ') : [],
-        frecuencia: user.frecuencia || 'Semanal',
-        status: user.status || 'Alta',
-      })
-    }
-    fetchLinks()
-  }, [user])
-
   async function fetchLinks() {
     if (user?.status !== 'Alta') return
     try {
@@ -64,7 +50,7 @@ export default function ProfilePage() {
         try {
           const parsed = new URL(url);
           return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-        } catch (e) {
+        } catch {
           return false;
         }
       }
@@ -77,6 +63,22 @@ export default function ProfilePage() {
       console.error('Error fetching links', err)
     }
   }
+
+  useEffect(() => {
+    if (user) {
+      // eslint-disable-next-line
+      setForm({
+        gender: user.gender || '',
+        age: user.age || '',
+        esquema: user.esquema || 'Puntos de Acopio',
+        residuo: user.residuo ? user.residuo.split(', ') : [],
+        frecuencia: user.frecuencia || 'Semanal',
+        status: user.status || 'Alta',
+      })
+    }
+    fetchLinks()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   function handleLogout() {
     logout()

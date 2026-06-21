@@ -44,8 +44,6 @@ function ProfileGuard({ children }) {
 }
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth()
-
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />

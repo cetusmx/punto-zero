@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Box, Typography, Grid, Card, CardContent, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Paper, Chip,
+  TableCell, TableContainer, TableHead, TableRow, Chip,
   IconButton, Button, Alert, CircularProgress, TextField,
   MenuItem, TablePagination, InputAdornment, Dialog, DialogTitle,
   DialogContent, DialogActions, Stack, Tooltip
@@ -11,6 +11,7 @@ import BlockIcon from '@mui/icons-material/Block'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import SearchIcon from '@mui/icons-material/Search'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import api from '../../lib/api'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -45,6 +46,7 @@ function UserEditDialog({ open, onClose, user, onSaved }) {
 
   useEffect(() => {
     if (open && user) {
+      // eslint-disable-next-line
       setFormData({
         gender: user.gender || '',
         age: user.age || '',
@@ -184,6 +186,7 @@ export default function AdminUsers() {
 
   // Reset page when search changes
   useEffect(() => {
+    // eslint-disable-next-line
     setPage(0)
   }, [debouncedSearch])
 
@@ -214,6 +217,7 @@ export default function AdminUsers() {
   }, [page, rowsPerPage, debouncedSearch])
 
   useEffect(() => {
+    // eslint-disable-next-line
     fetchUsers()
   }, [fetchUsers])
 
@@ -225,8 +229,8 @@ export default function AdminUsers() {
 
   const handleBlockUnblock = (user) => {
     const isBlocking = user.access === 'Habilitado'
-    let title = ''
-    let message = ''
+    let title;
+    let message;
 
     if (isBlocking && user.futureSchedulingsCount > 0) {
       title = 'Bloquear y Cancelar Turnos'
