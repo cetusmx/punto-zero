@@ -16,6 +16,11 @@ import {
   addPointException,
   removePointException
 } from '../controllers/collection-points-controller.js';
+import {
+  listUsers,
+  updateUserProfile,
+  blockUser
+} from '../controllers/admin-users-controller.js';
 import { authenticate, authorizeAdmin } from '../../middleware/auth.js';
 
 const router = Router();
@@ -35,5 +40,9 @@ router.put('/collection-points/:id', authenticate, authorizeAdmin, updateCollect
 router.get('/collection-points/:id/exceptions', authenticate, authorizeAdmin, getPointExceptions);
 router.post('/collection-points/:id/exceptions', authenticate, authorizeAdmin, addPointException);
 router.delete('/collection-points/:id/exceptions/:date', authenticate, authorizeAdmin, removePointException);
+// Users Management
+router.get('/users', authenticate, authorizeAdmin, listUsers);
+router.put('/users/:id', authenticate, authorizeAdmin, updateUserProfile);
+router.post('/users/:id/block', authenticate, authorizeAdmin, blockUser);
 
 export default router;

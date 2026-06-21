@@ -1,6 +1,6 @@
 # Story 4.2: Inactivate Collection Point with Cascade Cancellation
 
-Status: review
+Status: done
 
 ## Story
 
