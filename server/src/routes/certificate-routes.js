@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth-middleware.js';
+import { authenticate } from '../../middleware/auth.js';
 import { getCertificates, claimExencion, claimReconocimiento } from '../controllers/certificate-controller.js';
 
 const router = Router();
 
-router.get('/', requireAuth, getCertificates);
-router.post('/claim-exencion', requireAuth, claimExencion);
-router.post('/claim-reconocimiento', requireAuth, claimReconocimiento);
+router.get('/', authenticate, getCertificates);
+router.post('/claim-exencion', authenticate, claimExencion);
+router.post('/claim-reconocimiento', authenticate, claimReconocimiento);
 
 export default router;

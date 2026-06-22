@@ -21,7 +21,7 @@ export function authenticate(req, res, next) {
 
 export function authorizeAdmin(req, res, next) {
   if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'superadmin')) {
-    return res.status(403).json({ error: { message: 'No tienes permisos para realizar esta acción.' } });
+    return res.status(403).json({ error: { message: 'No tienes permisos de administrador.' } });
   }
   next();
 }

@@ -1,92 +1,93 @@
 import cron from 'node-cron';
+import { differenceInCalendarDays, startOfDay } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import prisma from '../../config/prisma-client.js';
-import { differenceInCalendarDays } from 'date-fns';
-import logger from '../utils/logger.js';
 
 export function initExpiryJob() {
   // Run every day at 1:00 AM CDMX time
   cron.schedule('0 1 * * *', async () => {
-    logger.info('[Expiry-Cron] Starting expiry check for Exencion certificates...');
+    console.log('[Expiry-Cron] Starting expiry check for Exencion certificates...');
     try {
       const activeExenciones = await prisma.certificateQR.findMany({
         where: {
           type: 'Exencion',
           isActive: true
-        }
+        },
+        include: { user: true }
       });
 
-      const nowTime = Date.now();
-      // Approximate CDMX shift (UTC-6)
-      const todayCDMX = new Date(nowTime - 6 * 3600 * 1000);
+      const todayCdmx = startOfDay(toZonedTime(new Date(), 'America/Mexico_City'));
 
       for (const cert of activeExenciones) {
-        if (!cert.expiresAt) continue;
-
         try {
-          const expiresCDMX = new Date(cert.expiresAt.getTime() - 6 * 3600 * 1000);
-          const diffDays = differenceInCalendarDays(expiresCDMX, todayCDMX);
+          if (!cert.expiryDate) continue;
+
+          const expiryCdmx = startOfDay(toZonedTime(cert.expiryDate, 'America/Mexico_City'));
+          const diffDays = differenceInCalendarDays(expiryCdmx, todayCdmx);
 
           if (diffDays < 0) {
-            // Expired
             await prisma.$transaction([
               prisma.certificateQR.update({
                 where: { id: cert.id },
                 data: { isActive: false }
               }),
-              prisma.notificationBadge.create({
+              prisma.notification.create({
                 data: {
                   userId: cert.userId,
-                  category: 'system',
-                  title: 'Exención Expirada',
-                  message: 'Tu certificado de exención ha expirado. Tus nuevas atenciones comenzarán a contar para uno nuevo.'
+                  type: 'SYSTEM',
+                  title: 'Certificado Expirado',
+                  message: 'Tu Certificado de Exención ha expirado. Necesitarás generar uno nuevo cumpliendo los requisitos.'
                 }
               })
             ]);
-            logger.info(`[Expiry-Cron] Certificate ${cert.id} marked as inactive.`);
+            console.log(`[Expiry-Cron] Certificate ${cert.id} marked as inactive.`);
           } else if (diffDays <= 30) {
             let threshold = null;
             let message = '';
-            
-            if (diffDays <= 0) { threshold = 0; message = 'Tu certificado de exención expira el día de hoy.'; }
-            else if (diffDays <= 7) { threshold = 7; message = 'Tu certificado de exención expira en 7 días u hoy mismo.'; message = `Tu certificado de exención expira en ${diffDays} días.`; }
-            else if (diffDays <= 30 && diffDays > 7) { threshold = 30; message = 'Tu certificado de exención expira en menos de 30 días.'; message = `Tu certificado de exención expira en ${diffDays} días.`; }
 
-            if (threshold !== null) {
-              // Ensure idempotency for each threshold window
-              const alreadyNotified = await prisma.notificationBadge.findFirst({
+            if (diffDays === 30) {
+              threshold = '30d';
+              message = 'Tu Certificado de Exención expira en 30 días.';
+            } else if (diffDays === 7) {
+              threshold = '7d';
+              message = 'Tu Certificado de Exención expira en 7 días.';
+            } else if (diffDays === 0) {
+              threshold = '0d';
+              message = 'Tu Certificado de Exención expira hoy.';
+            }
+
+            if (threshold) {
+              const existingNotif = await prisma.notification.findFirst({
                 where: {
                   userId: cert.userId,
                   title: 'Aviso de Expiración',
-                  message: { contains: threshold === 30 ? '30 días' : (threshold === 7 ? '7 días' : 'día de hoy') },
-                  createdAt: { gte: new Date(nowTime - 35 * 24 * 3600 * 1000) }
+                  message: { contains: threshold }
                 }
               });
 
-              if (!alreadyNotified) {
-                // To avoid string matching issues, just use strict strings for the query match
-                const finalMsg = threshold === 30 ? 'Tu certificado de exención expira en 30 días.' : (threshold === 7 ? 'Tu certificado de exención expira en 7 días.' : 'Tu certificado de exención expira el día de hoy.');
-                
-                await prisma.notificationBadge.create({
+              if (!existingNotif) {
+                const finalMsg = `${message} Recuerda renovarlo a tiempo. (Aviso: ${threshold})`;
+                await prisma.notification.create({
                   data: {
                     userId: cert.userId,
-                    category: 'system',
+                    type: 'SYSTEM',
                     title: 'Aviso de Expiración',
                     message: finalMsg
                   }
                 });
-                logger.info(`[Expiry-Cron] Expiry notification sent for certificate ${cert.id} (Threshold: ${threshold}).`);
+                console.log(`[Expiry-Cron] Expiry notification sent for certificate ${cert.id} (Threshold: ${threshold}).`);
               }
             }
           }
         } catch (innerErr) {
-          logger.error(`[Expiry-Cron] Failed to process certificate ${cert.id}:`, innerErr);
+          console.error(`[Expiry-Cron] Failed to process certificate ${cert.id}:`, innerErr);
         }
       }
-      logger.info('[Expiry-Cron] Expiry check completed successfully.');
+      console.log('[Expiry-Cron] Expiry check completed successfully.');
     } catch (err) {
-      logger.error('[Expiry-Cron] Error running expiry check:', err);
+      console.error('[Expiry-Cron] Error running expiry check:', err);
     }
   }, {
-    timezone: "America/Mexico_City"
+    timezone: 'America/Mexico_City'
   });
 }
