@@ -1,0 +1,526 @@
+diff --git a/_bmad-output/implementation-artifacts/5-4-qr-reconocimiento-expired-qr-handling.md b/_bmad-output/implementation-artifacts/5-4-qr-reconocimiento-expired-qr-handling.md
+new file mode 100644
+index 0000000..8344b4b
+--- /dev/null
++++ b/_bmad-output/implementation-artifacts/5-4-qr-reconocimiento-expired-qr-handling.md
+@@ -0,0 +1,78 @@
++# Story 5.4: QR Reconocimiento & Expired QR Handling
++
++Status: ready-for-dev
++
++## Story
++
++As a volunteer,
++I want to earn recognition QRs during my exemption period and see visual state for expired certificates,
++So that I feel recognized for continued participation and know when my exemption has lapsed.
++
++## Acceptance Criteria
++
++1. **Earning QR Reconocimiento (AC: #1):**
++   - **Given** I am a volunteer with an *active* `Exencion` certificate,
++   - **When** I complete 6 valid attendances within a new 6-month cycle (started after the most recent certificate, Exencion or Reconocimiento, was issued),
++   - **Then** I am eligible to claim a `Reconocimiento` certificate.
++   - **And** when claimed, a new `CertificateQR` of type `'Reconocimiento'` is generated with no expiration date (`expiresAt` is null).
++
++2. **Cycle Tracking & Reset (AC: #2):**
++   - **Given** I am earning a Reconocimiento,
++   - **When** I fail to complete the 6 attendances within 6 months of the last issued certificate,
++   - **Then** the count resets to 0 and a new 6-month cycle starts automatically (FR-24).
++   - **And** upon successfully claiming a Reconocimiento, those 6 attendances are consumed and a new 6-month cycle begins immediately for the next potential Reconocimiento.
++
++3. **Visual Differentiation for Reconocimiento (AC: #3):**
++   - **Given** I view "Mis Certificados",
++   - **When** I have a `Reconocimiento` certificate alongside an expired `Exencion` certificate,
++   - **Then** the `Reconocimiento` is formatted with a distinct visual style (e.g., brand primary or gold/secondary colors) to differentiate it.
++   - **And** the `Reconocimiento` displays the date of issuance but never shows an expiration date.
++   - **And** the `Reconocimiento` is always shown in its original colored style (never grey/opaque), while the expired `Exencion` shows grey/opaque simultaneously.
++
++4. **Notifications for Expiring Exención (AC: #4):**
++   - **Given** my QR `Exencion` is active,
++   - **When** the current date reaches exactly 30 days, 7 days, or 0 days (day of) prior to the `expiresAt` date,
++   - **Then** a background system process generates an in-app badge notification warning me of the upcoming expiry.
++
++5. **Cycle Reset Post-Expiry (AC: #5):**
++   - **Given** my QR `Exencion` expires,
++   - **When** I attend new operations,
++   - **Then** my new attendances automatically start counting toward a brand new `Exencion` certificate cycle.
++
++## Tasks / Subtasks
++
++### Server-Side (Express + Prisma)
++- [ ] **Endpoint: Claim Reconocimiento (`POST /api/v1/volunteer/certificates/claim-reconocimiento`)**
++  - Verify if user has an active `Exencion` certificate.
++  - Calculate attendances using the updated `calculateUserProgress`.
++  - Ensure the user is eligible for a `Reconocimiento` (totalAttendances >= 6 in the current cycle).
++  - Create a new `CertificateQR` with `type: 'Reconocimiento'`, `issuedAt: new Date()`, `expiresAt: null`, `isActive: true`. This automatically consumes the 6 attendances by establishing a new `issuedAt` date for future cycle tracking.
++- [ ] **Exemption Service Logic Update (`calculateUserProgress`)**
++  - Overhaul the dynamic `periodStartDate` calculation. It must resolve to the `issuedAt` date of the *most recent* certificate (`Exencion` or `Reconocimiento`) OR the start of a new cycle if 6 months have passed since then.
++  - Return `{ cycleType: 'Exencion' | 'Reconocimiento', totalAttendances, isEligible, cycleStartDate, cycleEndDate }` to assist the frontend CTA logic and properly enforce the strict 6-month window without concurrent periods (FR-23).
++- [ ] **Background Job: Expiry Notifications**
++  - Implement a daily cron job that queries for `CertificateQR` where `type = 'Exencion'` and `isActive = true`.
++  - Calculate days remaining until `expiresAt`. If exactly 30, 7, or 0 days, create a `NotificationBadge` for the user.
++  - Automatically update `isActive = false` if `expiresAt < now()`.
++
++### Client-Side (React + MUI)
++- [ ] **Component: `CertificatesPage.jsx` updates**
++  - Read `cycleType` from `/agenda/progress` to conditionally render either "Generar Certificado de Exención" or "Generar Certificado de Reconocimiento" when eligible.
++  - Update `CertificateCard` logic to apply a distinct color theme (e.g., warning/gold) when `cert.type === 'Reconocimiento'`.
++  - Ensure `Reconocimiento` cards do not render an expiration date block and bypass the `!isActive` grayscale logic.
++  - Test UI visually with both an expired Exención and a new Reconocimiento side-by-side to ensure styles apply concurrently without conflicts.
++
++## Dev Notes
++
++### Progress Calculation Overhaul (Critical)
++The `calculateUserProgress` service must dynamically set the `periodStartDate`. 
++1. Fetch the user's most recently issued certificate. 
++2. If none, start from the first attendance or today.
++3. If one exists, the new tracking cycle starts on its `issuedAt` date.
++4. However, if >6 months have elapsed since that date, the cycle has failed and it must fast-forward the `periodStartDate` in 6-month chunks (or simply from the first attendance after the lapsed 6 months) to enforce the rolling expiry, identical to how the Exencion expiry works.
++
++### Idempotency & Claim Vulnerability
++By anchoring the `periodStartDate` to the most recent certificate's `issuedAt` date, claiming a Reconocimiento implicitly "consumes" the 6 attendances (because the next progress check will only count attendances *after* the newly minted Reconocimiento). Ensure the claim endpoint runs within a database transaction or uses proper locking to prevent concurrent requests from minting duplicate certificates for the same 6 attendances.
++
++### Cron Job Safety
++The daily expiry cron job must be idempotent. Avoid sending duplicate notifications if the cron runs twice in one day. 
+diff --git a/client/src/pages/CertificatesPage.jsx b/client/src/pages/CertificatesPage.jsx
+index 4b90dc9..433ca83 100644
+--- a/client/src/pages/CertificatesPage.jsx
++++ b/client/src/pages/CertificatesPage.jsx
+@@ -16,7 +16,7 @@ function CertificateCard({ cert, isActive, userName, theme }) {
+     certId: cert.id,
+     userId: cert.userId,
+     type: cert.type,
+-    expiresAt: cert.expiresAt,
++    expiresAt: cert.expiresAt, // will be null for Reconocimiento
+   })
+ 
+   const safeFormatDate = (dateString) => {
+@@ -25,22 +25,31 @@ function CertificateCard({ cert, isActive, userName, theme }) {
+     return isValid(parsed) ? format(parsed, "d 'de' MMMM, yyyy", { locale: es }) : 'Fecha inválida'
+   }
+ 
++  const isReconocimiento = cert.type === 'Reconocimiento'
++  const isActualActive = isReconocimiento || isActive
++
++  // Distinct styling for Reconocimiento
++  const borderColor = isReconocimiento ? 'warning.main' : (isActualActive ? 'success.light' : 'divider')
++  const bgMain = isReconocimiento ? 'warning.main' : (isActualActive ? 'success.main' : 'grey.400')
++  const bgSoft = isReconocimiento ? alpha(theme.palette.warning.main, 0.05) : (isActualActive ? alpha(theme.palette.success.main, 0.03) : 'background.paper')
++  const textColor = isReconocimiento ? 'warning.main' : (isActualActive ? 'success.main' : 'text.primary')
++
+   return (
+     <Card elevation={0} sx={{ 
+       borderRadius: '24px', 
+       border: '1px solid',
+-      borderColor: isActive ? 'success.light' : 'divider',
+-      bgcolor: isActive ? alpha(theme.palette.success.main, 0.03) : 'background.paper',
++      borderColor: borderColor,
++      bgcolor: bgSoft,
+       mb: 3,
+       overflow: 'hidden'
+     }}>
+-      <Box sx={{ p: 2, bgcolor: isActive ? 'success.main' : 'grey.400', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
++      <Box sx={{ p: 2, bgcolor: bgMain, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+         <EmojiEventsIcon />
+         <Typography variant="h6" sx={{ fontWeight: 700 }}>
+-          {cert.type === 'Exencion' ? 'Certificado de Exención' : 'Certificado de Reconocimiento'}
++          {isReconocimiento ? 'Certificado de Reconocimiento' : 'Certificado de Exención'}
+         </Typography>
+       </Box>
+-      <CardContent sx={{ p: 4, opacity: isActive ? 1 : 0.6, filter: isActive ? 'none' : 'grayscale(100%)' }}>
++      <CardContent sx={{ p: 4, opacity: isActualActive ? 1 : 0.6, filter: isActualActive ? 'none' : 'grayscale(100%)' }}>
+         <Grid container spacing={4} alignItems="center">
+           <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center' }}>
+             <Box 
+@@ -63,9 +72,9 @@ function CertificateCard({ cert, isActive, userName, theme }) {
+             </Box>
+           </Grid>
+           <Grid item xs={12} md={7}>
+-            {isActive && (
+-              <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main', mb: 2 }}>
+-                ¡Felicidades! Tu certificado está activo.
++            {isActualActive && (
++              <Typography variant="h5" sx={{ fontWeight: 700, color: textColor, mb: 2 }}>
++                ¡Felicidades! Tu certificado {isReconocimiento ? 'fue otorgado' : 'está activo'}.
+               </Typography>
+             )}
+             
+@@ -86,7 +95,7 @@ function CertificateCard({ cert, isActive, userName, theme }) {
+               </Typography>
+             </Box>
+ 
+-            {cert.expiresAt && (
++            {!isReconocimiento && cert.expiresAt && (
+               <Box>
+                 <Typography variant="caption" color="text.secondary" display="block">Válido hasta</Typography>
+                 <Typography variant="body1" sx={{ fontWeight: 600, color: isActive ? 'text.primary' : 'error.main' }}>
+@@ -142,7 +151,11 @@ export default function CertificatesPage() {
+     setError('')
+     setSuccess('')
+     try {
+-      await api.post('/volunteer/certificates/claim-exencion')
++      const endpoint = progress?.cycleType === 'Reconocimiento' 
++        ? '/volunteer/certificates/claim-reconocimiento'
++        : '/volunteer/certificates/claim-exencion'
++
++      await api.post(endpoint)
+       setSuccess('¡Certificado generado con éxito!')
+       await fetchData()
+     } catch (err) {
+@@ -162,7 +175,6 @@ export default function CertificatesPage() {
+ 
+   const activeCertificates = certificates.filter(c => c.isActive)
+   const pastCertificates = certificates.filter(c => !c.isActive)
+-  const hasActiveExencion = activeCertificates.some(c => c.type === 'Exencion')
+   
+   // Single source of truth from backend
+   const isEligible = progress?.isEligible
+@@ -181,17 +193,17 @@ export default function CertificatesPage() {
+       {success && <Alert severity="success" sx={{ mb: 4, borderRadius: '16px' }}>{success}</Alert>}
+       {error && <Alert severity="error" sx={{ mb: 4, borderRadius: '16px' }}>{error}</Alert>}
+ 
+-      {!hasActiveExencion && isEligible && (
++      {isEligible && (
+         <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
+           <Button 
+             variant="contained" 
+-            color="primary" 
++            color={progress?.cycleType === 'Reconocimiento' ? 'warning' : 'primary'}
+             size="large"
+             disabled={claimLoading}
+             onClick={handleClaim}
+             sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600, px: 4 }}
+           >
+-            {claimLoading ? <CircularProgress size={24} color="inherit" /> : 'Generar Certificado de Exención'}
++            {claimLoading ? <CircularProgress size={24} color="inherit" /> : `Generar Certificado de ${progress?.cycleType || 'Exención'}`}
+           </Button>
+         </Box>
+       )}
+diff --git a/server/index.js b/server/index.js
+index a1719bb..2859d7e 100644
+--- a/server/index.js
++++ b/server/index.js
+@@ -12,6 +12,7 @@ import adminRoutes from './src/routes/admin-routes.js';
+ import metricsRoutes from './src/routes/metrics-routes.js';
+ import certificateRoutes from './src/routes/certificate-routes.js';
+ import { initAttendanceJob } from './src/jobs/attendance-cron.js';
++import { initExpiryJob } from './src/jobs/expiry-cron.js';
+ 
+ const app = express();
+ const PORT = process.env.PORT || 3001;
+@@ -35,6 +36,7 @@ app.get('/api/v1/health', (req, res) => {
+ app.use(errorHandler);
+ 
+ initAttendanceJob();
++initExpiryJob();
+ 
+ app.listen(PORT, () => {
+   logger.info(`Server running on port ${PORT}`);
+diff --git a/server/src/controllers/certificate-controller.js b/server/src/controllers/certificate-controller.js
+index 0a69873..5b436d8 100644
+--- a/server/src/controllers/certificate-controller.js
++++ b/server/src/controllers/certificate-controller.js
+@@ -23,46 +23,64 @@ export async function claimExencion(req, res, next) {
+ 
+     const progress = await calculateUserProgress(userId);
+ 
+-    // The backend single source of truth for eligibility
+-    if (!progress.isEligible) {
++    // Ensure they are eligible and actually in the Exencion cycle
++    if (!progress.isEligible || progress.cycleType !== 'Exencion') {
+       return res.status(400).json({ 
+-        error: { message: 'Aún no cuentas con la asistencia necesaria en el periodo actual para solicitar tu exención.' } 
++        error: { message: 'No eres elegible para un certificado de Exención en este momento.' } 
+       });
+     }
+ 
+-    const activeExencion = await prisma.certificateQR.findFirst({
+-      where: {
++    const issuedAt = new Date();
++    const expiresAt = addYears(issuedAt, 1);
++
++    const newCertificate = await prisma.certificateQR.create({
++      data: {
+         userId,
+         type: 'Exencion',
++        issuedAt,
++        expiresAt,
+         isActive: true,
+-        expiresAt: {
+-          gt: new Date()
+-        }
++        attendancesAtIssuance: progress.totalAttendances
+       }
+     });
+ 
+-    if (activeExencion) {
++    res.status(201).json({
++      message: 'Certificado generado con éxito.',
++      certificate: newCertificate
++    });
++  } catch (err) {
++    next(err);
++  }
++}
++
++export async function claimReconocimiento(req, res, next) {
++  try {
++    const userId = req.user.id;
++
++    const progress = await calculateUserProgress(userId);
++
++    // Ensure they are eligible and actually in the Reconocimiento cycle
++    if (!progress.isEligible || progress.cycleType !== 'Reconocimiento') {
+       return res.status(400).json({ 
+-        error: { message: 'Ya cuentas con un certificado de Exención activo.' } 
++        error: { message: 'No eres elegible para un certificado de Reconocimiento en este momento.' } 
+       });
+     }
+ 
+     const issuedAt = new Date();
+-    const expiresAt = addYears(issuedAt, 1);
+ 
+     const newCertificate = await prisma.certificateQR.create({
+       data: {
+         userId,
+-        type: 'Exencion',
++        type: 'Reconocimiento',
+         issuedAt,
+-        expiresAt,
++        expiresAt: null, // Reconocimientos never expire
+         isActive: true,
+         attendancesAtIssuance: progress.totalAttendances
+       }
+     });
+ 
+     res.status(201).json({
+-      message: 'Certificado generado con éxito.',
++      message: 'Certificado de Reconocimiento generado con éxito.',
+       certificate: newCertificate
+     });
+   } catch (err) {
+diff --git a/server/src/jobs/expiry-cron.js b/server/src/jobs/expiry-cron.js
+new file mode 100644
+index 0000000..9b1e8e4
+--- /dev/null
++++ b/server/src/jobs/expiry-cron.js
+@@ -0,0 +1,66 @@
++import cron from 'node-cron';
++import prisma from '../../config/prisma-client.js';
++import { differenceInDays } from 'date-fns';
++import logger from '../utils/logger.js';
++
++export function initExpiryJob() {
++  // Run every day at 1:00 AM CDMX time
++  cron.schedule('0 1 * * *', async () => {
++    logger.info('[Expiry-Cron] Starting expiry check for Exencion certificates...');
++    try {
++      const activeExenciones = await prisma.certificateQR.findMany({
++        where: {
++          type: 'Exencion',
++          isActive: true
++        }
++      });
++
++      const today = new Date();
++
++      for (const cert of activeExenciones) {
++        if (!cert.expiresAt) continue;
++
++        const diffDays = differenceInDays(cert.expiresAt, today);
++
++        if (diffDays < 0) {
++          // Expired
++          await prisma.certificateQR.update({
++            where: { id: cert.id },
++            data: { isActive: false }
++          });
++          logger.info(`[Expiry-Cron] Certificate ${cert.id} marked as inactive.`);
++          
++          await prisma.notificationBadge.create({
++            data: {
++              userId: cert.userId,
++              category: 'system',
++              title: 'Exención Expirada',
++              message: 'Tu certificado de exención ha expirado. Tus nuevas atenciones comenzarán a contar para uno nuevo.'
++            }
++          });
++        } else if (diffDays === 30 || diffDays === 7 || diffDays === 0) {
++          // Notifications
++          let message = '';
++          if (diffDays === 30) message = 'Tu certificado de exención expira en 30 días.';
++          else if (diffDays === 7) message = 'Tu certificado de exención expira en 7 días.';
++          else if (diffDays === 0) message = 'Tu certificado de exención expira el día de hoy.';
++
++          await prisma.notificationBadge.create({
++            data: {
++              userId: cert.userId,
++              category: 'system',
++              title: 'Aviso de Expiración',
++              message
++            }
++          });
++          logger.info(`[Expiry-Cron] Expiry notification sent for certificate ${cert.id} (${diffDays} days remaining).`);
++        }
++      }
++      logger.info('[Expiry-Cron] Expiry check completed successfully.');
++    } catch (err) {
++      logger.error('[Expiry-Cron] Error running expiry check:', err);
++    }
++  }, {
++    timezone: "America/Mexico_City"
++  });
++}
+diff --git a/server/src/routes/certificate-routes.js b/server/src/routes/certificate-routes.js
+index 123db4e..67e34e0 100644
+--- a/server/src/routes/certificate-routes.js
++++ b/server/src/routes/certificate-routes.js
+@@ -1,10 +1,11 @@
+ import { Router } from 'express';
+ import { requireAuth } from '../middleware/auth-middleware.js';
+-import { getCertificates, claimExencion } from '../controllers/certificate-controller.js';
++import { getCertificates, claimExencion, claimReconocimiento } from '../controllers/certificate-controller.js';
+ 
+ const router = Router();
+ 
+ router.get('/', requireAuth, getCertificates);
+ router.post('/claim-exencion', requireAuth, claimExencion);
++router.post('/claim-reconocimiento', requireAuth, claimReconocimiento);
+ 
+ export default router;
+diff --git a/server/src/services/exemption-service.js b/server/src/services/exemption-service.js
+index fc8b928..f24e533 100644
+--- a/server/src/services/exemption-service.js
++++ b/server/src/services/exemption-service.js
+@@ -20,12 +20,41 @@ export async function calculateUserProgress(userId) {
+     return { isActive: false, totalAttendances: 0, faltas: 0, deadline: null, remaining: 6, isEligible: false };
+   }
+ 
+-  // Find all attendances for the user, only "Asistio" or "Falta"
++  // Find the latest certificate issued to this user
++  const latestCertificate = await prisma.certificateQR.findFirst({
++    where: { userId: parsedUserId },
++    orderBy: { issuedAt: 'desc' }
++  });
++
++  let cycleType = 'Exencion';
++  if (latestCertificate) {
++    // Check if the user has an active Exencion
++    const activeExencion = await prisma.certificateQR.findFirst({
++      where: {
++        userId: parsedUserId,
++        type: 'Exencion',
++        isActive: true,
++        expiresAt: { gt: new Date() }
++      }
++    });
++    if (activeExencion) {
++      cycleType = 'Reconocimiento';
++    }
++  }
++
++  const attendanceWhere = {
++    userId: parsedUserId,
++    status: { in: ['Asistio', 'Falta'] }
++  };
++
++  // Only consider attendances strictly after the latest certificate was issued
++  if (latestCertificate) {
++    attendanceWhere.saturdayDate = { gt: latestCertificate.issuedAt };
++  }
++
++  // Find all valid attendances
+   const attendances = await prisma.scheduling.findMany({
+-    where: {
+-      userId: parsedUserId,
+-      status: { in: ['Asistio', 'Falta'] }
+-    },
++    where: attendanceWhere,
+     orderBy: [
+       { saturdayDate: 'asc' },
+       { id: 'asc' }
+@@ -35,6 +64,7 @@ export async function calculateUserProgress(userId) {
+   if (attendances.length === 0) {
+     return {
+       isActive: true,
++      cycleType,
+       totalAttendances: 0,
+       faltas: 0,
+       deadline: null,
+@@ -58,26 +88,20 @@ export async function calculateUserProgress(userId) {
+         currentWindowAttendances = [att];
+         faltasInWindow = 0;
+       }
+-      // "Conteo desde la PRIMERA ATENCIÓN". Faltas before any attendance do not start a window.
+       continue;
+     }
+ 
+-    // Window has started
+     if (isAfter(attDate, currentWindowDeadline)) {
+-      // Current attendance is strictly after the deadline.
+-      // If the user already reached 6 attendances in this window, they keep their eligibility forever
+       const attsInWindow = currentWindowAttendances.filter(a => a.status === 'Asistio').length;
+       if (attsInWindow >= 6) {
+-        break; // Stop evaluating, they earned it
++        break;
+       }
+ 
+-      // Otherwise, the current window expired without success. Reset.
+       currentWindowStart = null;
+       currentWindowDeadline = null;
+       currentWindowAttendances = [];
+       faltasInWindow = 0;
+ 
+-      // If this one is 'Asistio', it starts a new window immediately
+       if (att.status === 'Asistio') {
+         currentWindowStart = attDate;
+         currentWindowDeadline = addMonths(currentWindowStart, 6);
+@@ -85,18 +109,16 @@ export async function calculateUserProgress(userId) {
+         faltasInWindow = 0;
+       }
+     } else {
+-      // It is within the window
+       currentWindowAttendances.push(att);
+       
+       const attsInWindow = currentWindowAttendances.filter(a => a.status === 'Asistio').length;
+       if (attsInWindow >= 6) {
+-        break; // Stop evaluating, they earned it
++        break;
+       }
+ 
+       if (att.status === 'Falta') {
+         faltasInWindow++;
+         if (faltasInWindow >= 3) {
+-          // 3 faltas reached -> Reset the window
+           currentWindowStart = null;
+           currentWindowDeadline = null;
+           currentWindowAttendances = [];
+@@ -109,6 +131,7 @@ export async function calculateUserProgress(userId) {
+   if (!currentWindowStart) {
+     return {
+       isActive: true,
++      cycleType,
+       totalAttendances: 0,
+       faltas: 0,
+       deadline: null,
+@@ -128,11 +151,10 @@ export async function calculateUserProgress(userId) {
+   let isEligible = totalAttendances >= 6;
+   const remaining = Math.max(0, 6 - totalAttendances);
+ 
+-  // Real-time Expiration check:
+-  // If the current date is past the deadline, and they didn't reach eligibility, the window is reset.
+   if (!isEligible && isAfter(new Date(), currentWindowDeadline)) {
+     return {
+       isActive: true,
++      cycleType,
+       totalAttendances: 0,
+       faltas: 0,
+       deadline: null,
+@@ -143,6 +165,7 @@ export async function calculateUserProgress(userId) {
+ 
+   return {
+     isActive: true,
++    cycleType,
+     totalAttendances,
+     faltas,
+     deadline: currentWindowDeadline,

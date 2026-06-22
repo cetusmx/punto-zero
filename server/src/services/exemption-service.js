@@ -20,12 +20,55 @@ export async function calculateUserProgress(userId) {
     return { isActive: false, totalAttendances: 0, faltas: 0, deadline: null, remaining: 6, isEligible: false };
   }
 
-  // Find all attendances for the user, only "Asistio" or "Falta"
+  // Find the latest certificate issued to this user
+  const latestCertificate = await prisma.certificateQR.findFirst({
+    where: { userId: parsedUserId },
+    orderBy: { issuedAt: 'desc' }
+  });
+
+  let cycleType = 'Exencion';
+  if (latestCertificate) {
+    // Check if the user has an active Exencion
+    const activeExencion = await prisma.certificateQR.findFirst({
+      where: {
+        userId: parsedUserId,
+        type: 'Exencion',
+        isActive: true,
+        expiresAt: { gt: new Date() }
+      }
+    });
+    if (activeExencion) {
+      cycleType = 'Reconocimiento';
+    }
+  }
+
+  let periodStartDate = null;
+  if (latestCertificate) {
+    if (latestCertificate.type === 'Exencion' && latestCertificate.expiresAt && !activeExencion) {
+      // The Exencion expired. Only attendances AFTER the expiration date count for the new Exencion.
+      periodStartDate = latestCertificate.expiresAt;
+    } else {
+      // Reconocimientos or Active Exencion. Attendances after the issue date count.
+      periodStartDate = latestCertificate.issuedAt;
+    }
+  }
+
+  const attendanceWhere = {
+    userId: parsedUserId,
+    status: { in: ['Asistio', 'Falta'] }
+  };
+
+  if (periodStartDate) {
+    // Start of day ensures we don't omit same-day attendances incorrectly, 
+    // but if claimed at the point of collection, we must ensure it strictly is strictly greater.
+    // However, scheduling dates are strictly dates without time (or midnight). 
+    // To safely include same-day attendances for future, we use the timestamp properly.
+    attendanceWhere.saturdayDate = { gt: periodStartDate };
+  }
+
+  // Find all valid attendances
   const attendances = await prisma.scheduling.findMany({
-    where: {
-      userId: parsedUserId,
-      status: { in: ['Asistio', 'Falta'] }
-    },
+    where: attendanceWhere,
     orderBy: [
       { saturdayDate: 'asc' },
       { id: 'asc' }
@@ -35,6 +78,7 @@ export async function calculateUserProgress(userId) {
   if (attendances.length === 0) {
     return {
       isActive: true,
+      cycleType,
       totalAttendances: 0,
       faltas: 0,
       deadline: null,
@@ -58,26 +102,20 @@ export async function calculateUserProgress(userId) {
         currentWindowAttendances = [att];
         faltasInWindow = 0;
       }
-      // "Conteo desde la PRIMERA ATENCIÓN". Faltas before any attendance do not start a window.
       continue;
     }
 
-    // Window has started
     if (isAfter(attDate, currentWindowDeadline)) {
-      // Current attendance is strictly after the deadline.
-      // If the user already reached 6 attendances in this window, they keep their eligibility forever
       const attsInWindow = currentWindowAttendances.filter(a => a.status === 'Asistio').length;
       if (attsInWindow >= 6) {
-        break; // Stop evaluating, they earned it
+        break; // The window closed and they earned it. Future attendances are frozen until claim.
       }
 
-      // Otherwise, the current window expired without success. Reset.
       currentWindowStart = null;
       currentWindowDeadline = null;
       currentWindowAttendances = [];
       faltasInWindow = 0;
 
-      // If this one is 'Asistio', it starts a new window immediately
       if (att.status === 'Asistio') {
         currentWindowStart = attDate;
         currentWindowDeadline = addMonths(currentWindowStart, 6);
@@ -85,18 +123,11 @@ export async function calculateUserProgress(userId) {
         faltasInWindow = 0;
       }
     } else {
-      // It is within the window
       currentWindowAttendances.push(att);
-      
-      const attsInWindow = currentWindowAttendances.filter(a => a.status === 'Asistio').length;
-      if (attsInWindow >= 6) {
-        break; // Stop evaluating, they earned it
-      }
 
       if (att.status === 'Falta') {
         faltasInWindow++;
         if (faltasInWindow >= 3) {
-          // 3 faltas reached -> Reset the window
           currentWindowStart = null;
           currentWindowDeadline = null;
           currentWindowAttendances = [];
@@ -109,6 +140,7 @@ export async function calculateUserProgress(userId) {
   if (!currentWindowStart) {
     return {
       isActive: true,
+      cycleType,
       totalAttendances: 0,
       faltas: 0,
       deadline: null,
@@ -128,11 +160,10 @@ export async function calculateUserProgress(userId) {
   let isEligible = totalAttendances >= 6;
   const remaining = Math.max(0, 6 - totalAttendances);
 
-  // Real-time Expiration check:
-  // If the current date is past the deadline, and they didn't reach eligibility, the window is reset.
   if (!isEligible && isAfter(new Date(), currentWindowDeadline)) {
     return {
       isActive: true,
+      cycleType,
       totalAttendances: 0,
       faltas: 0,
       deadline: null,
@@ -143,6 +174,7 @@ export async function calculateUserProgress(userId) {
 
   return {
     isActive: true,
+    cycleType,
     totalAttendances,
     faltas,
     deadline: currentWindowDeadline,

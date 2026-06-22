@@ -16,7 +16,7 @@ function CertificateCard({ cert, isActive, userName, theme }) {
     certId: cert.id,
     userId: cert.userId,
     type: cert.type,
-    expiresAt: cert.expiresAt,
+    expiresAt: cert.expiresAt, // will be null for Reconocimiento
   })
 
   const safeFormatDate = (dateString) => {
@@ -25,22 +25,31 @@ function CertificateCard({ cert, isActive, userName, theme }) {
     return isValid(parsed) ? format(parsed, "d 'de' MMMM, yyyy", { locale: es }) : 'Fecha inválida'
   }
 
+  const isReconocimiento = cert.type === 'Reconocimiento'
+  const isActualActive = isActive
+
+  // Distinct styling for Reconocimiento
+  const borderColor = isReconocimiento ? 'warning.main' : (isActualActive ? 'success.light' : 'divider')
+  const bgMain = isReconocimiento ? 'warning.main' : (isActualActive ? 'success.main' : 'grey.400')
+  const bgSoft = isReconocimiento ? alpha(theme.palette.warning.main, 0.05) : (isActualActive ? alpha(theme.palette.success.main, 0.03) : 'background.paper')
+  const textColor = isReconocimiento ? 'warning.main' : (isActualActive ? 'success.main' : 'text.primary')
+
   return (
     <Card elevation={0} sx={{ 
       borderRadius: '24px', 
       border: '1px solid',
-      borderColor: isActive ? 'success.light' : 'divider',
-      bgcolor: isActive ? alpha(theme.palette.success.main, 0.03) : 'background.paper',
+      borderColor: borderColor,
+      bgcolor: bgSoft,
       mb: 3,
       overflow: 'hidden'
     }}>
-      <Box sx={{ p: 2, bgcolor: isActive ? 'success.main' : 'grey.400', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+      <Box sx={{ p: 2, bgcolor: bgMain, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
         <EmojiEventsIcon />
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {cert.type === 'Exencion' ? 'Certificado de Exención' : 'Certificado de Reconocimiento'}
+          {isReconocimiento ? 'Certificado de Reconocimiento' : 'Certificado de Exención'}
         </Typography>
       </Box>
-      <CardContent sx={{ p: 4, opacity: isActive ? 1 : 0.6, filter: isActive ? 'none' : 'grayscale(100%)' }}>
+      <CardContent sx={{ p: 4, opacity: isActualActive ? 1 : 0.6, filter: isActualActive ? 'none' : 'grayscale(100%)' }}>
         <Grid container spacing={4} alignItems="center">
           <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center' }}>
             <Box 
@@ -63,9 +72,9 @@ function CertificateCard({ cert, isActive, userName, theme }) {
             </Box>
           </Grid>
           <Grid item xs={12} md={7}>
-            {isActive && (
-              <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main', mb: 2 }}>
-                ¡Felicidades! Tu certificado está activo.
+            {isActualActive && (
+              <Typography variant="h5" sx={{ fontWeight: 700, color: textColor, mb: 2 }}>
+                ¡Felicidades! Tu certificado {isReconocimiento ? 'fue otorgado' : 'está activo'}.
               </Typography>
             )}
             
@@ -86,7 +95,7 @@ function CertificateCard({ cert, isActive, userName, theme }) {
               </Typography>
             </Box>
 
-            {cert.expiresAt && (
+            {!isReconocimiento && cert.expiresAt && (
               <Box>
                 <Typography variant="caption" color="text.secondary" display="block">Válido hasta</Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: isActive ? 'text.primary' : 'error.main' }}>
@@ -142,7 +151,11 @@ export default function CertificatesPage() {
     setError('')
     setSuccess('')
     try {
-      await api.post('/volunteer/certificates/claim-exencion')
+      const endpoint = progress?.cycleType === 'Reconocimiento' 
+        ? '/volunteer/certificates/claim-reconocimiento'
+        : '/volunteer/certificates/claim-exencion'
+
+      await api.post(endpoint)
       setSuccess('¡Certificado generado con éxito!')
       await fetchData()
     } catch (err) {
@@ -162,7 +175,6 @@ export default function CertificatesPage() {
 
   const activeCertificates = certificates.filter(c => c.isActive)
   const pastCertificates = certificates.filter(c => !c.isActive)
-  const hasActiveExencion = activeCertificates.some(c => c.type === 'Exencion')
   
   // Single source of truth from backend
   const isEligible = progress?.isEligible
@@ -181,17 +193,17 @@ export default function CertificatesPage() {
       {success && <Alert severity="success" sx={{ mb: 4, borderRadius: '16px' }}>{success}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 4, borderRadius: '16px' }}>{error}</Alert>}
 
-      {!hasActiveExencion && isEligible && (
+      {isEligible && (
         <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
           <Button 
             variant="contained" 
-            color="primary" 
+            color={progress?.cycleType === 'Reconocimiento' ? 'warning' : 'primary'}
             size="large"
             disabled={claimLoading}
             onClick={handleClaim}
             sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600, px: 4 }}
           >
-            {claimLoading ? <CircularProgress size={24} color="inherit" /> : 'Generar Certificado de Exención'}
+            {claimLoading ? <CircularProgress size={24} color="inherit" /> : `Generar Certificado de ${progress?.cycleType || 'Exención'}`}
           </Button>
         </Box>
       )}

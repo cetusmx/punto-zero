@@ -12,6 +12,7 @@ import adminRoutes from './src/routes/admin-routes.js';
 import metricsRoutes from './src/routes/metrics-routes.js';
 import certificateRoutes from './src/routes/certificate-routes.js';
 import { initAttendanceJob } from './src/jobs/attendance-cron.js';
+import { initExpiryJob } from './src/jobs/expiry-cron.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +36,7 @@ app.get('/api/v1/health', (req, res) => {
 app.use(errorHandler);
 
 initAttendanceJob();
+initExpiryJob();
 
 app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
