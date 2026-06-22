@@ -10,6 +10,7 @@ import configRoutes from './src/routes/config-routes.js';
 import agendaRoutes from './src/routes/agenda-routes.js';
 import adminRoutes from './src/routes/admin-routes.js';
 import metricsRoutes from './src/routes/metrics-routes.js';
+import certificateRoutes from './src/routes/certificate-routes.js';
 import { initAttendanceJob } from './src/jobs/attendance-cron.js';
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/v1/config', configRoutes);
 app.use('/api/v1/agenda', agendaRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/metrics', metricsRoutes);
+app.use('/api/v1/volunteer/certificates', certificateRoutes);
 
 app.get('/api/v1/health', (req, res) => {
   res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });

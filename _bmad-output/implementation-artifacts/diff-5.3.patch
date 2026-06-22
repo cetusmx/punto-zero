@@ -1,0 +1,248 @@
+diff --git a/_bmad-output/implementation-artifacts/sprint-status.yaml b/_bmad-output/implementation-artifacts/sprint-status.yaml
+index 5927c7f..5e0cc07 100644
+--- a/_bmad-output/implementation-artifacts/sprint-status.yaml
++++ b/_bmad-output/implementation-artifacts/sprint-status.yaml
+@@ -83,7 +83,7 @@ development_status:
+   epic-5: in-progress
+   5-1-exemption-program-activation-progress-tracking: done
+   5-2-3-falta-reset-logic: done
+-  5-3-qr-exencion-certificate: backlog
++  5-3-qr-exencion-certificate: ready-for-dev
+   5-4-qr-reconocimiento-expired-qr-handling: backlog
+   epic-5-retrospective: optional
+ 
+diff --git a/client/src/pages/CertificatesPage.jsx b/client/src/pages/CertificatesPage.jsx
+index 2968a8f..dfc9788 100644
+--- a/client/src/pages/CertificatesPage.jsx
++++ b/client/src/pages/CertificatesPage.jsx
+@@ -1,10 +1,206 @@
+-import { Box, Typography } from '@mui/material'
++import { useState, useEffect } from 'react'
++import { Box, Typography, Grid, Card, CardContent, CircularProgress, Alert, alpha, useTheme, Button } from '@mui/material'
++import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
++import { QRCodeSVG } from 'qrcode.react'
++import { format, parseISO } from 'date-fns'
++import { es } from 'date-fns/locale'
++import api from '../lib/api'
+ 
+ export default function CertificatesPage() {
++  const theme = useTheme()
++  const [certificates, setCertificates] = useState([])
++  const [progress, setProgress] = useState(null)
++  const [loading, setLoading] = useState(true)
++  const [claimLoading, setClaimLoading] = useState(false)
++  const [error, setError] = useState('')
++  const [success, setSuccess] = useState('')
++
++  useEffect(() => {
++    fetchData()
++  }, [])
++
++  async function fetchData() {
++    try {
++      const [certRes, progRes] = await Promise.all([
++        api.get('/certificates'),
++        api.get('/agenda/progress')
++      ])
++      setCertificates(certRes.data)
++      setProgress(progRes.data)
++    } catch (err) {
++      setError('Error al cargar tus certificados o progreso.')
++    } finally {
++      setLoading(false)
++    }
++  }
++
++  const handleClaim = async () => {
++    setClaimLoading(true)
++    setError('')
++    setSuccess('')
++    try {
++      await api.post('/certificates/claim-exencion')
++      setSuccess('¡Certificado generado con éxito!')
++      fetchData()
++    } catch (err) {
++      setError(err.response?.data?.error?.message || 'Error al generar el certificado.')
++    } finally {
++      setClaimLoading(false)
++    }
++  }
++
++  if (loading) {
++    return (
++      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
++        <CircularProgress />
++      </Box>
++    )
++  }
++
++  const activeCertificates = certificates.filter(c => c.isActive)
++  const pastCertificates = certificates.filter(c => !c.isActive)
++  const hasActiveExencion = activeCertificates.some(c => c.type === 'Exencion')
++  const isEligible = progress?.isEligible && progress?.totalAttendances >= 6
++
++  function CertificateCard({ cert, isActive }) {
++    // Disable context menu to prevent easy "save image as"
++    const handleContextMenu = (e) => {
++      e.preventDefault()
++    }
++
++    const qrData = JSON.stringify({
++      certId: cert.id,
++      userId: cert.userId,
++      type: cert.type,
++      expiresAt: cert.expiresAt,
++    })
++
++    return (
++      <Card elevation={0} sx={{ 
++        borderRadius: '24px', 
++        border: '1px solid',
++        borderColor: isActive ? 'success.light' : 'divider',
++        bgcolor: isActive ? alpha(theme.palette.success.main, 0.03) : 'background.paper',
++        mb: 3,
++        overflow: 'hidden'
++      }}>
++        <Box sx={{ p: 2, bgcolor: isActive ? 'success.main' : 'grey.400', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
++          <EmojiEventsIcon />
++          <Typography variant="h6" sx={{ fontWeight: 700 }}>
++            {cert.type === 'Exencion' ? 'Certificado de Exención' : 'Certificado de Reconocimiento'}
++          </Typography>
++        </Box>
++        <CardContent sx={{ p: 4, opacity: isActive ? 1 : 0.6, filter: isActive ? 'none' : 'grayscale(100%)' }}>
++          <Grid container spacing={4} alignItems="center">
++            <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center' }}>
++              <Box 
++                onContextMenu={handleContextMenu}
++                sx={{ 
++                  p: 2, 
++                  bgcolor: 'white', 
++                  borderRadius: '16px', 
++                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
++                  display: 'inline-block',
++                  userSelect: 'none',
++                  pointerEvents: 'none'
++                }}
++                draggable={false}
++              >
++                <QRCodeSVG value={qrData} size={200} level="M" includeMargin={false} />
++              </Box>
++            </Grid>
++            <Grid item xs={12} md={7}>
++              {isActive && (
++                <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main', mb: 2 }}>
++                  ¡Felicidades! Tu certificado está activo.
++                </Typography>
++              )}
++              
++              <Box sx={{ mb: 2 }}>
++                <Typography variant="caption" color="text.secondary" display="block">Tipo de Certificado</Typography>
++                <Typography variant="body1" sx={{ fontWeight: 600 }}>{cert.type}</Typography>
++              </Box>
++
++              <Box sx={{ mb: 2 }}>
++                <Typography variant="caption" color="text.secondary" display="block">Fecha de Emisión</Typography>
++                <Typography variant="body1" sx={{ fontWeight: 600 }}>
++                  {format(parseISO(cert.issuedAt), "d 'de' MMMM, yyyy", { locale: es })}
++                </Typography>
++              </Box>
++
++              {cert.expiresAt && (
++                <Box>
++                  <Typography variant="caption" color="text.secondary" display="block">Válido hasta</Typography>
++                  <Typography variant="body1" sx={{ fontWeight: 600, color: isActive ? 'text.primary' : 'error.main' }}>
++                    {format(parseISO(cert.expiresAt), "d 'de' MMMM, yyyy", { locale: es })}
++                  </Typography>
++                </Box>
++              )}
++            </Grid>
++          </Grid>
++        </CardContent>
++      </Card>
++    )
++  }
++
+   return (
+-    <Box>
+-      <Typography variant="h4">Certificados</Typography>
+-      <Typography color="text.secondary">Tus QRs de exención y reconocimiento</Typography>
++    <Box sx={{ py: 2 }}>
++      <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main' }}>
++        Mis Certificados
++      </Typography>
++      <Typography color="text.secondary" sx={{ mb: 4 }}>
++        Aquí encontrarás tus códigos QR generados por asistencia constante.
++      </Typography>
++
++      {success && <Alert severity="success" sx={{ mb: 4, borderRadius: '16px' }}>{success}</Alert>}
++      {error && <Alert severity="error" sx={{ mb: 4, borderRadius: '16px' }}>{error}</Alert>}
++
++      {!hasActiveExencion && isEligible && (
++        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
++          <Button 
++            variant="contained" 
++            color="primary" 
++            size="large"
++            disabled={claimLoading}
++            onClick={handleClaim}
++            sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600, px: 4 }}
++          >
++            {claimLoading ? <CircularProgress size={24} color="inherit" /> : 'Generar Certificado de Exención'}
++          </Button>
++        </Box>
++      )}
++
++      {certificates.length === 0 ? (
++        <Box sx={{ 
++          p: 6, textAlign: 'center', borderRadius: '24px', 
++          bgcolor: alpha('#000', 0.02), border: '2px dashed', borderColor: 'divider' 
++        }}>
++          <EmojiEventsIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
++          <Typography variant="h6" color="text.secondary" gutterBottom>
++            Aún no tienes certificados. Completa 6 atenciones para obtener tu Exención.
++          </Typography>
++        </Box>
++      ) : (
++        <>
++          {activeCertificates.length > 0 && (
++            <Box sx={{ mb: 6 }}>
++              <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>Certificados Activos</Typography>
++              {activeCertificates.map(cert => (
++                <CertificateCard key={cert.id} cert={cert} isActive={true} />
++              ))}
++            </Box>
++          )}
++
++          {pastCertificates.length > 0 && (
++            <Box>
++              <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, color: 'text.secondary' }}>Historial de Certificados</Typography>
++              {pastCertificates.map(cert => (
++                <CertificateCard key={cert.id} cert={cert} isActive={false} />
++              ))}
++            </Box>
++          )}
++        </>
++      )}
+     </Box>
+   )
+ }
+diff --git a/server/index.js b/server/index.js
+index aff4537..dee9782 100644
+--- a/server/index.js
++++ b/server/index.js
+@@ -10,6 +10,7 @@ import configRoutes from './src/routes/config-routes.js';
+ import agendaRoutes from './src/routes/agenda-routes.js';
+ import adminRoutes from './src/routes/admin-routes.js';
+ import metricsRoutes from './src/routes/metrics-routes.js';
++import certificateRoutes from './src/routes/certificate-routes.js';
+ import { initAttendanceJob } from './src/jobs/attendance-cron.js';
+ 
+ const app = express();
+@@ -25,6 +26,7 @@ app.use('/api/v1/config', configRoutes);
+ app.use('/api/v1/agenda', agendaRoutes);
+ app.use('/api/v1/admin', adminRoutes);
+ app.use('/api/v1/metrics', metricsRoutes);
++app.use('/api/v1/certificates', certificateRoutes);
+ 
+ app.get('/api/v1/health', (req, res) => {
+   res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
