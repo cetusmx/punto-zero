@@ -112,6 +112,14 @@ export default function ExemptionProgress() {
               ¡Felicidades! Has completado tus atenciones. Tu código QR de exención está listo.
             </Typography>
           )}
+          
+          {progress.faltas === 2 && !isComplete && (
+            <Box sx={{ mt: 1, p: 1.5, bgcolor: 'error.50', borderRadius: '12px' }}>
+              <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
+                Llevas 2 faltas. Una más y tu conteo de atenciones se reiniciará.
+              </Typography>
+            </Box>
+          )}
         </Stack>
       </CardContent>
     </Card>

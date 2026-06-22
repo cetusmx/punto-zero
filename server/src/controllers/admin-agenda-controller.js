@@ -1,4 +1,5 @@
 import prisma from '../../config/prisma-client.js';
+import { calculateUserProgress } from '../services/exemption-service.js';
 
 export async function getSaturdayTurns(req, res, next) {
   try {
@@ -79,6 +80,11 @@ export async function updateTurnStatus(req, res, next) {
       return res.status(400).json({ error: { message: 'Estatus inválido.' } });
     }
 
+    const currentTurn = await prisma.scheduling.findUnique({ where: { id: parseInt(id) } });
+    if (!currentTurn) return res.status(404).json({ error: { message: 'Turno no encontrado.' } });
+
+    const oldProgress = await calculateUserProgress(currentTurn.userId);
+
     const turn = await prisma.scheduling.update({
       where: { id: parseInt(id) },
       data: { status },
@@ -95,6 +101,18 @@ export async function updateTurnStatus(req, res, next) {
           message: `Has sido marcado con una Falta para el sábado ${turn.saturdayDate.toISOString().split('T')[0]}. Contacta al administrador si crees que es un error.`,
         }
       });
+      
+      const newProgress = await calculateUserProgress(turn.userId);
+      if (oldProgress.faltas === 2 && newProgress.faltas === 0 && newProgress.totalAttendances === 0) {
+        await prisma.notificationBadge.create({
+          data: {
+            userId: turn.userId,
+            category: 'reset',
+            title: 'Conteo Reiniciado',
+            message: 'Has acumulado 3 faltas. Tu conteo de atenciones se ha reiniciado a 0. ¡No te rindas, vuelve a agendar!',
+          }
+        });
+      }
     }
 
     res.json({ message: 'Estatus actualizado correctamente.', turn });

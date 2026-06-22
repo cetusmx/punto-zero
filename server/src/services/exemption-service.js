@@ -21,18 +21,13 @@ export async function calculateUserProgress(userId) {
   }
 
   // Find all attendances for the user, only "Asistio" or "Falta"
-  const attendances = await prisma.attendance.findMany({
+  const attendances = await prisma.scheduling.findMany({
     where: {
       userId: parsedUserId,
       status: { in: ['Asistio', 'Falta'] }
     },
-    include: {
-      scheduling: true
-    },
     orderBy: {
-      scheduling: {
-        saturdayDate: 'asc'
-      }
+      saturdayDate: 'asc'
     }
   });
 
@@ -50,15 +45,17 @@ export async function calculateUserProgress(userId) {
   let currentWindowStart = null;
   let currentWindowAttendances = [];
   let currentWindowDeadline = null;
+  let faltasInWindow = 0;
 
   for (const att of attendances) {
-    const attDate = att.scheduling.saturdayDate;
+    const attDate = att.saturdayDate;
 
     if (!currentWindowStart) {
       if (att.status === 'Asistio') {
         currentWindowStart = attDate;
         currentWindowDeadline = addMonths(currentWindowStart, 6);
         currentWindowAttendances = [att];
+        faltasInWindow = 0;
       }
       // "Conteo desde la PRIMERA ATENCIÓN". Faltas before any attendance do not start a window.
       continue;
@@ -77,16 +74,34 @@ export async function calculateUserProgress(userId) {
       currentWindowStart = null;
       currentWindowDeadline = null;
       currentWindowAttendances = [];
+      faltasInWindow = 0;
 
       // If this one is 'Asistio', it starts a new window immediately
       if (att.status === 'Asistio') {
         currentWindowStart = attDate;
         currentWindowDeadline = addMonths(currentWindowStart, 6);
         currentWindowAttendances = [att];
+        faltasInWindow = 0;
       }
     } else {
       // It is within the window
       currentWindowAttendances.push(att);
+      
+      const attsInWindow = currentWindowAttendances.filter(a => a.status === 'Asistio').length;
+      if (attsInWindow >= 6) {
+        break; // Stop evaluating, they earned it
+      }
+
+      if (att.status === 'Falta') {
+        faltasInWindow++;
+        if (faltasInWindow >= 3) {
+          // 3 faltas reached -> Reset the window
+          currentWindowStart = null;
+          currentWindowDeadline = null;
+          currentWindowAttendances = [];
+          faltasInWindow = 0;
+        }
+      }
     }
   }
 
