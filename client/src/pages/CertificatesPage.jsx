@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Box, Typography, Grid, Card, CardContent, CircularProgress, Alert, alpha, useTheme, Button } from '@mui/material'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import { QRCodeSVG } from 'qrcode.react'
@@ -111,13 +111,7 @@ export default function CertificatesPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  useEffect(() => {
-    const controller = new AbortController()
-    fetchData(controller.signal)
-    return () => controller.abort()
-  }, [])
-
-  async function fetchData(signal) {
+  const fetchData = useCallback(async (signal) => {
     try {
       const [certRes, progRes] = await Promise.all([
         api.get('/volunteer/certificates', { signal }),
@@ -133,7 +127,15 @@ export default function CertificatesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData(controller.signal)
+    return () => controller.abort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleClaim = async () => {
     setClaimLoading(true)
