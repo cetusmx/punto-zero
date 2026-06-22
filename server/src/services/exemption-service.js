@@ -26,9 +26,10 @@ export async function calculateUserProgress(userId) {
       userId: parsedUserId,
       status: { in: ['Asistio', 'Falta'] }
     },
-    orderBy: {
-      saturdayDate: 'asc'
-    }
+    orderBy: [
+      { saturdayDate: 'asc' },
+      { id: 'asc' }
+    ]
   });
 
   if (attendances.length === 0) {

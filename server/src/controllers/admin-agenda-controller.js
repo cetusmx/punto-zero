@@ -1,5 +1,6 @@
 import prisma from '../../config/prisma-client.js';
 import { calculateUserProgress } from '../services/exemption-service.js';
+import { isAfter } from 'date-fns';
 
 export async function getSaturdayTurns(req, res, next) {
   try {
@@ -75,18 +76,25 @@ export async function updateTurnStatus(req, res, next) {
     const { id } = req.params;
     const { status } = req.body;
 
+    const turnId = parseInt(id);
+    if (isNaN(turnId)) return res.status(400).json({ error: { message: 'ID inválido.' } });
+
     const validStatuses = ['Pendiente', 'Asistio', 'Falta', 'Cancelado'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: { message: 'Estatus inválido.' } });
     }
 
-    const currentTurn = await prisma.scheduling.findUnique({ where: { id: parseInt(id) } });
+    const currentTurn = await prisma.scheduling.findUnique({ where: { id: turnId } });
     if (!currentTurn) return res.status(404).json({ error: { message: 'Turno no encontrado.' } });
+
+    if (currentTurn.status === status) {
+      return res.json({ message: 'Estatus sin cambios.', turn: currentTurn });
+    }
 
     const oldProgress = await calculateUserProgress(currentTurn.userId);
 
     const turn = await prisma.scheduling.update({
-      where: { id: parseInt(id) },
+      where: { id: turnId },
       data: { status },
       include: { user: true }
     });
@@ -103,7 +111,10 @@ export async function updateTurnStatus(req, res, next) {
       });
       
       const newProgress = await calculateUserProgress(turn.userId);
-      if (oldProgress.faltas === 2 && newProgress.faltas === 0 && newProgress.totalAttendances === 0) {
+      const isTimeExpiration = newProgress.deadline && isAfter(currentTurn.saturdayDate, newProgress.deadline);
+      const resetOccurred = oldProgress.faltas === 2 && newProgress.faltas === 0 && !isTimeExpiration;
+      
+      if (resetOccurred) {
         await prisma.notificationBadge.create({
           data: {
             userId: turn.userId,

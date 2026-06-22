@@ -113,10 +113,10 @@ export default function ExemptionProgress() {
             </Typography>
           )}
           
-          {progress.faltas === 2 && !isComplete && (
-            <Box sx={{ mt: 1, p: 1.5, bgcolor: 'error.50', borderRadius: '12px' }}>
+          {progress.faltas >= 2 && !isComplete && (
+            <Box sx={{ mt: 1, p: 1.5, bgcolor: alpha(theme.palette.error.main, 0.1), borderRadius: '12px' }}>
               <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
-                Llevas 2 faltas. Una más y tu conteo de atenciones se reiniciará.
+                Llevas {progress.faltas} faltas. Una más y tu conteo de atenciones se reiniciará.
               </Typography>
             </Box>
           )}

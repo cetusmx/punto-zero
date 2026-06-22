@@ -1,0 +1,194 @@
+diff --git a/_bmad-output/implementation-artifacts/5-2-3-falta-reset-logic.md b/_bmad-output/implementation-artifacts/5-2-3-falta-reset-logic.md
+new file mode 100644
+index 0000000..bcc13cd
+--- /dev/null
++++ b/_bmad-output/implementation-artifacts/5-2-3-falta-reset-logic.md
+@@ -0,0 +1,36 @@
++# Story 5.2: 3-Falta Reset Logic
++
++## Story Foundation
++As a volunteer,
++I want my attendance count to reset if I accumulate 3 faltas,
++So that the exemption program is fair and requires consistent participation.
++
++**Acceptance Criteria:**
++- Given I have accumulated 3 faltas in my current cycle,
++  When the third falta is registered by the admin,
++  Then my attendance and falta counts reset to 0, a new cycle starts from that date, and I receive a badge notification.
++- Given an admin reverts a falta that caused a 3-falta reset,
++  Then the system re-evaluates the count and restores it if appropriate.
++- Given I have 2 faltas,
++  Then I see a warning on my progress view: "Llevas 2 faltas. Una más y tu conteo de atenciones se reiniciará."
++
++## Developer Context
++
++### Technical Requirements
++1. **Reset Logic**: Update `calculateUserProgress` in `server/src/services/exemption-service.js`. 
++   - Inside the loop evaluating `attendances`, keep track of `faltas`. 
++   - If `att.status === 'Falta'` and `faltas` reaches `3`, immediately reset `currentWindowStart = null`, `currentWindowDeadline = null`, `currentWindowAttendances = []`, and reset `faltas`. 
++   - This automatically satisfies the "revert" rule, since `calculateUserProgress` dynamically recalculates the window based on the actual history of attendances and faltas. If an admin changes a "Falta" back to "Pendiente", the 3-falta condition won't trigger during recalculation.
++2. **Warning UI**: In `client/src/components/ExemptionProgress.jsx`:
++   - If `progress.faltas === 2`, display a warning alert.
++   - Text: "Llevas 2 faltas. Una más y tu conteo de atenciones se reiniciará."
++3. **Admin Trigger & Notification**: 
++   - The PRD says "When the third falta is registered by the admin... I receive a badge notification". 
++   - This requires updating the admin endpoint that marks a `Falta`. When a status is changed to `Falta`, calculate the progress *after* the change. If the resulting calculation triggered a reset (this requires checking if the newly added falta was the 3rd one, which might be tricky if we just recalculate), we need to send a badge notification.
++   - Alternatively, we can check the state *before* and *after*. If `faltas` was `2` before the change, and we are adding a `Falta`, then it resets. So we can just check `const oldProgress = await calculateUserProgress(userId)` and `const newProgress = await calculateUserProgress(userId)`. If `oldProgress.faltas === 2` and `newProgress.faltas === 0` (and `newProgress.totalAttendances === 0`), it means a reset occurred, so we can trigger the badge notification. (Note: The Notification System is Epic 6, but we should at least leave a placeholder or simple DB insertion for the badge if Epic 6 isn't fully implemented, or just log it for now). Wait! "notificar usuario: badge (campana)" - we might not have a `Notification` model yet. If we don't, just add a simple `TODO` or a basic schema update for Notifications if it doesn't exist, or just skip the actual notification delivery if the model isn't there yet. Let's look if `Notification` exists.
++
++### Architecture & Compliance
++- The dynamic `calculateUserProgress` is the single source of truth. Do NOT store `windowStart` in the DB as a persistent field, keep the dynamic calculation to ensure automatic reversions.
++
++## Status
++Status: ready-for-dev
+diff --git a/_bmad-output/implementation-artifacts/sprint-status.yaml b/_bmad-output/implementation-artifacts/sprint-status.yaml
+index 471eae8..8bb25fe 100644
+--- a/_bmad-output/implementation-artifacts/sprint-status.yaml
++++ b/_bmad-output/implementation-artifacts/sprint-status.yaml
+@@ -82,7 +82,7 @@ development_status:
+   # Epic 5: Exemption Program & Certificates
+   epic-5: in-progress
+   5-1-exemption-program-activation-progress-tracking: done
+-  5-2-3-falta-reset-logic: backlog
++  5-2-3-falta-reset-logic: ready-for-dev
+   5-3-qr-exencion-certificate: backlog
+   5-4-qr-reconocimiento-expired-qr-handling: backlog
+   epic-5-retrospective: optional
+diff --git a/client/src/components/ExemptionProgress.jsx b/client/src/components/ExemptionProgress.jsx
+index 7266cec..618716b 100644
+--- a/client/src/components/ExemptionProgress.jsx
++++ b/client/src/components/ExemptionProgress.jsx
+@@ -112,6 +112,14 @@ export default function ExemptionProgress() {
+               ¡Felicidades! Has completado tus atenciones. Tu código QR de exención está listo.
+             </Typography>
+           )}
++          
++          {progress.faltas === 2 && !isComplete && (
++            <Box sx={{ mt: 1, p: 1.5, bgcolor: 'error.50', borderRadius: '12px' }}>
++              <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
++                Llevas 2 faltas. Una más y tu conteo de atenciones se reiniciará.
++              </Typography>
++            </Box>
++          )}
+         </Stack>
+       </CardContent>
+     </Card>
+diff --git a/server/src/controllers/admin-agenda-controller.js b/server/src/controllers/admin-agenda-controller.js
+index 9f3a0cc..179f9f5 100644
+--- a/server/src/controllers/admin-agenda-controller.js
++++ b/server/src/controllers/admin-agenda-controller.js
+@@ -1,4 +1,5 @@
+ import prisma from '../../config/prisma-client.js';
++import { calculateUserProgress } from '../services/exemption-service.js';
+ 
+ export async function getSaturdayTurns(req, res, next) {
+   try {
+@@ -79,6 +80,11 @@ export async function updateTurnStatus(req, res, next) {
+       return res.status(400).json({ error: { message: 'Estatus inválido.' } });
+     }
+ 
++    const currentTurn = await prisma.scheduling.findUnique({ where: { id: parseInt(id) } });
++    if (!currentTurn) return res.status(404).json({ error: { message: 'Turno no encontrado.' } });
++
++    const oldProgress = await calculateUserProgress(currentTurn.userId);
++
+     const turn = await prisma.scheduling.update({
+       where: { id: parseInt(id) },
+       data: { status },
+@@ -95,6 +101,18 @@ export async function updateTurnStatus(req, res, next) {
+           message: `Has sido marcado con una Falta para el sábado ${turn.saturdayDate.toISOString().split('T')[0]}. Contacta al administrador si crees que es un error.`,
+         }
+       });
++      
++      const newProgress = await calculateUserProgress(turn.userId);
++      if (oldProgress.faltas === 2 && newProgress.faltas === 0 && newProgress.totalAttendances === 0) {
++        await prisma.notificationBadge.create({
++          data: {
++            userId: turn.userId,
++            category: 'reset',
++            title: 'Conteo Reiniciado',
++            message: 'Has acumulado 3 faltas. Tu conteo de atenciones se ha reiniciado a 0. ¡No te rindas, vuelve a agendar!',
++          }
++        });
++      }
+     }
+ 
+     res.json({ message: 'Estatus actualizado correctamente.', turn });
+diff --git a/server/src/services/exemption-service.js b/server/src/services/exemption-service.js
+index 41f943d..3028a88 100644
+--- a/server/src/services/exemption-service.js
++++ b/server/src/services/exemption-service.js
+@@ -21,18 +21,13 @@ export async function calculateUserProgress(userId) {
+   }
+ 
+   // Find all attendances for the user, only "Asistio" or "Falta"
+-  const attendances = await prisma.attendance.findMany({
++  const attendances = await prisma.scheduling.findMany({
+     where: {
+       userId: parsedUserId,
+       status: { in: ['Asistio', 'Falta'] }
+     },
+-    include: {
+-      scheduling: true
+-    },
+     orderBy: {
+-      scheduling: {
+-        saturdayDate: 'asc'
+-      }
++      saturdayDate: 'asc'
+     }
+   });
+ 
+@@ -50,15 +45,17 @@ export async function calculateUserProgress(userId) {
+   let currentWindowStart = null;
+   let currentWindowAttendances = [];
+   let currentWindowDeadline = null;
++  let faltasInWindow = 0;
+ 
+   for (const att of attendances) {
+-    const attDate = att.scheduling.saturdayDate;
++    const attDate = att.saturdayDate;
+ 
+     if (!currentWindowStart) {
+       if (att.status === 'Asistio') {
+         currentWindowStart = attDate;
+         currentWindowDeadline = addMonths(currentWindowStart, 6);
+         currentWindowAttendances = [att];
++        faltasInWindow = 0;
+       }
+       // "Conteo desde la PRIMERA ATENCIÓN". Faltas before any attendance do not start a window.
+       continue;
+@@ -77,16 +74,34 @@ export async function calculateUserProgress(userId) {
+       currentWindowStart = null;
+       currentWindowDeadline = null;
+       currentWindowAttendances = [];
++      faltasInWindow = 0;
+ 
+       // If this one is 'Asistio', it starts a new window immediately
+       if (att.status === 'Asistio') {
+         currentWindowStart = attDate;
+         currentWindowDeadline = addMonths(currentWindowStart, 6);
+         currentWindowAttendances = [att];
++        faltasInWindow = 0;
+       }
+     } else {
+       // It is within the window
+       currentWindowAttendances.push(att);
++      
++      const attsInWindow = currentWindowAttendances.filter(a => a.status === 'Asistio').length;
++      if (attsInWindow >= 6) {
++        break; // Stop evaluating, they earned it
++      }
++
++      if (att.status === 'Falta') {
++        faltasInWindow++;
++        if (faltasInWindow >= 3) {
++          // 3 faltas reached -> Reset the window
++          currentWindowStart = null;
++          currentWindowDeadline = null;
++          currentWindowAttendances = [];
++          faltasInWindow = 0;
++        }
++      }
+     }
+   }
+ 

@@ -82,7 +82,7 @@ development_status:
   # Epic 5: Exemption Program & Certificates
   epic-5: in-progress
   5-1-exemption-program-activation-progress-tracking: done
-  5-2-3-falta-reset-logic: ready-for-dev
+  5-2-3-falta-reset-logic: done
   5-3-qr-exencion-certificate: backlog
   5-4-qr-reconocimiento-expired-qr-handling: backlog
   epic-5-retrospective: optional
