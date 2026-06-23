@@ -1,6 +1,7 @@
-import { Routes, Route, NavLink } from 'react-router-dom'
-import { Box, Paper, BottomNavigation, BottomNavigationAction, AppBar, Toolbar, Typography } from '@mui/material'
+import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import { Box, Paper, BottomNavigation, BottomNavigationAction, AppBar, Toolbar, Typography, IconButton, Tooltip } from '@mui/material'
 import BadgeCenter from '../components/notifications/BadgeCenter'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import HomeIcon from '@mui/icons-material/Home'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import EventNoteIcon from '@mui/icons-material/EventNote'
@@ -11,6 +12,7 @@ import AgendaPage from '../pages/AgendaPage'
 import MySchedulesPage from '../pages/MySchedulesPage'
 import CertificatesPage from '../pages/CertificatesPage'
 import ProfilePage from '../pages/ProfilePage'
+import { useAuth } from '../context/AuthContext'
 
 const tabs = [
   { label: 'Inicio', icon: <HomeIcon />, path: '/' },
@@ -21,6 +23,9 @@ const tabs = [
 ]
 
 export default function VolunteerLayout() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  
   return (
     <Box sx={{ pb: 7, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="sticky">
@@ -28,6 +33,13 @@ export default function VolunteerLayout() {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             punto-zero
           </Typography>
+          {(user?.role === 'admin' || user?.role === 'superadmin') && (
+            <Tooltip title="Panel de Administración">
+              <IconButton color="inherit" onClick={() => navigate('/admin')}>
+                <AdminPanelSettingsIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <BadgeCenter />
         </Toolbar>
       </AppBar>

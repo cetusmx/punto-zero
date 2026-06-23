@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Routes, Route, NavLink } from 'react-router-dom'
+import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
 import {
   Box, Drawer, List, ListItem, ListItemButton, ListItemIcon,
-  ListItemText, Toolbar, AppBar, Typography, IconButton,
+  ListItemText, Toolbar, AppBar, Typography, IconButton, Tooltip
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import DashboardIcon from '@mui/icons-material/Dashboard'
@@ -12,6 +12,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import BadgeIcon from '@mui/icons-material/Badge'
 import SettingsIcon from '@mui/icons-material/Settings'
 import SecurityIcon from '@mui/icons-material/Security'
+import ExitToAppIcon from '@mui/icons-material/ExitToApp'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import AdminPoints from '../pages/admin/AdminPoints'
 import AdminUsers from '../pages/admin/AdminUsers'
@@ -36,6 +37,7 @@ const menuItems = [
 export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   const currentMenuItems = [...menuItems]
   if (user?.role === 'superadmin') {
@@ -68,6 +70,11 @@ export default function AdminLayout() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>Admin Panel</Typography>
+          <Tooltip title="Volver a la App (Vista Voluntario)">
+            <IconButton color="inherit" onClick={() => navigate('/')}>
+              <ExitToAppIcon />
+            </IconButton>
+          </Tooltip>
           <BadgeCenter />
         </Toolbar>
       </AppBar>
