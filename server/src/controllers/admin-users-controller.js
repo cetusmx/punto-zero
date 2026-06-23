@@ -50,9 +50,9 @@ export async function listUsers(req, res, next) {
           createdAt: true,
           gender: true,
           age: true,
-          scheme: true,
-          residueType: true,
-          frequency: true,
+          esquema: true,
+          residuo: true,
+          frecuencia: true,
           _count: {
             select: {
               schedulings: {
@@ -69,7 +69,16 @@ export async function listUsers(req, res, next) {
     ]);
 
     const data = users.map(u => {
-      const mapped = { ...u, futureSchedulingsCount: u._count.schedulings };
+      const mapped = { 
+        ...u, 
+        scheme: u.esquema, 
+        residueType: u.residuo, 
+        frequency: u.frecuencia, 
+        futureSchedulingsCount: u._count.schedulings 
+      };
+      delete mapped.esquema;
+      delete mapped.residuo;
+      delete mapped.frecuencia;
       delete mapped._count;
       return mapped;
     });
@@ -91,8 +100,8 @@ export async function updateUserProfile(req, res, next) {
       data: {
         gender,
         age,
-        scheme,
-        frequency,
+        esquema: scheme,
+        frecuencia: frequency,
         status
       }
     });
