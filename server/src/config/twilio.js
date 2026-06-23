@@ -1,44 +1,33 @@
 import { logger } from '../../config/logger.js';
 import prisma from '../../config/prisma-client.js';
 
-let twilioClient = null;
-let cachedConfig = null;
-
-export function clearTwilioCache() {
-  cachedConfig = null;
-  twilioClient = null;
-}
-
 export async function getTwilioConfig() {
-  if (cachedConfig) return cachedConfig;
-  
   const configs = await prisma.appConfig.findMany({
     where: {
       key: { in: ['twilio_account_sid', 'twilio_auth_token', 'twilio_phone_number', 'admin_phone'] }
     }
   });
 
-  const dbConfig = {
-    accountSid: configs.find(c => c.key === 'twilio_account_sid')?.value || process.env.TWILIO_ACCOUNT_SID,
-    authToken: configs.find(c => c.key === 'twilio_auth_token')?.value || process.env.TWILIO_AUTH_TOKEN,
-    twilioPhone: configs.find(c => c.key === 'twilio_phone_number')?.value || process.env.TWILIO_PHONE_NUMBER,
-    adminPhone: configs.find(c => c.key === 'admin_phone')?.value || process.env.ADMIN_PHONE,
+  const getVal = (key, envVar) => {
+    const record = configs.find(c => c.key === key);
+    return record !== undefined ? record.value : process.env[envVar];
   };
 
-  cachedConfig = dbConfig;
-  return dbConfig;
+  return {
+    accountSid: getVal('twilio_account_sid', 'TWILIO_ACCOUNT_SID'),
+    authToken: getVal('twilio_auth_token', 'TWILIO_AUTH_TOKEN'),
+    twilioPhone: getVal('twilio_phone_number', 'TWILIO_PHONE_NUMBER'),
+    adminPhone: getVal('admin_phone', 'ADMIN_PHONE'),
+  };
 }
 
 async function getTwilioClient() {
-  if (twilioClient) return twilioClient;
-
   const config = await getTwilioConfig();
 
   if (config.accountSid && config.authToken) {
     try {
       const { default: twilio } = await import('twilio');
-      twilioClient = twilio(config.accountSid, config.authToken);
-      logger.info('Twilio client initialized');
+      const twilioClient = twilio(config.accountSid, config.authToken);
       return twilioClient;
     } catch (err) {
       logger.warn('Failed to initialize Twilio client, using mock fallback: ' + err.message);

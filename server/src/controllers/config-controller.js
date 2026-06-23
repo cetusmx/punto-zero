@@ -1,5 +1,4 @@
 import prisma from '../../config/prisma-client.js';
-import { clearTwilioCache } from '../config/twilio.js';
 
 export async function getConfig(req, res, next) {
   try {
@@ -22,7 +21,12 @@ export async function getConfig(req, res, next) {
       });
       
       keysToFetch.forEach(key => {
-        configData[key] = configs.find(c => c.key === key)?.value || '';
+        let val = configs.find(c => c.key === key)?.value || '';
+        // Security Masking: never return raw auth token
+        if (key === 'twilio_auth_token' && val) {
+          val = '••••••••';
+        }
+        configData[key] = val;
       });
     }
 
@@ -52,6 +56,10 @@ export async function updateConfig(req, res, next) {
     
     for (const field of fieldsToUpdate) {
       if (req.body[field] !== undefined) {
+        // If it's the masked token, don't overwrite it
+        if (field === 'twilio_auth_token' && req.body[field] === '••••••••') {
+          continue;
+        }
         itemsToUpsert.push({ 
           key: field, 
           value: typeof req.body[field] === 'string' ? req.body[field].trim() : '' 
@@ -59,28 +67,13 @@ export async function updateConfig(req, res, next) {
       }
     }
 
-    let twilioUpdated = false;
-
     for (const item of itemsToUpsert) {
-      if (item.value) {
-        await prisma.appConfig.upsert({
-          where: { key: item.key },
-          update: { value: item.value },
-          create: { key: item.key, value: item.value }
-        });
-      } else {
-        await prisma.appConfig.deleteMany({
-          where: { key: item.key }
-        });
-      }
-      
-      if (item.key.startsWith('twilio_') || item.key === 'admin_phone') {
-        twilioUpdated = true;
-      }
-    }
-
-    if (twilioUpdated) {
-      clearTwilioCache();
+      // Upsert always to prevent Ghost Config from env fallback
+      await prisma.appConfig.upsert({
+        where: { key: item.key },
+        update: { value: item.value },
+        create: { key: item.key, value: item.value }
+      });
     }
 
     res.status(200).json({

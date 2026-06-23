@@ -199,8 +199,11 @@ export async function cancelScheduling(req, res, next) {
       }
     });
 
-    const nowStr = new Date().toLocaleString("en-US", {timeZone: "America/Mexico_City", weekday: "short"});
-    if (nowStr === "Fri") {
+    const nowCDMX = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Mexico_City"}));
+    const day = nowCDMX.getDay();
+    const hour = nowCDMX.getHours();
+    
+    if (day === 5 || (day === 6 && hour < 12)) {
       const config = await getTwilioConfig();
       if (!config.adminPhone) {
         logger.warn('Admin phone not configured, skipping Friday cancellation SMS.');
