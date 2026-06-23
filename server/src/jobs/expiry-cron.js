@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { differenceInCalendarDays, startOfDay } from 'date-fns';
+import { differenceInCalendarDays, startOfDay, subDays } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import prisma from '../../config/prisma-client.js';
 
@@ -8,6 +8,22 @@ export function initExpiryJob() {
   cron.schedule('0 1 * * *', async () => {
     console.log('[Expiry-Cron] Starting expiry check for Exencion certificates...');
     try {
+      // 1. Clean up old notifications (older than 30 days)
+      try {
+        const thirtyDaysAgo = subDays(new Date(), 30);
+        const deleted = await prisma.notificationBadge.deleteMany({
+          where: {
+            createdAt: {
+              lt: thirtyDaysAgo
+            }
+          }
+        });
+        console.log(`[Expiry-Cron] Cleanup: deleted ${deleted.count} old notifications.`);
+      } catch (cleanupErr) {
+        console.error('[Expiry-Cron] Error during notification cleanup:', cleanupErr);
+      }
+
+      // 2. Process Exenciones
       const activeExenciones = await prisma.certificateQR.findMany({
         where: {
           type: 'Exencion',
@@ -20,9 +36,9 @@ export function initExpiryJob() {
 
       for (const cert of activeExenciones) {
         try {
-          if (!cert.expiryDate) continue;
+          if (!cert.expiresAt) continue;
 
-          const expiryCdmx = startOfDay(toZonedTime(cert.expiryDate, 'America/Mexico_City'));
+          const expiryCdmx = startOfDay(toZonedTime(cert.expiresAt, 'America/Mexico_City'));
           const diffDays = differenceInCalendarDays(expiryCdmx, todayCdmx);
 
           if (diffDays < 0) {
@@ -31,10 +47,10 @@ export function initExpiryJob() {
                 where: { id: cert.id },
                 data: { isActive: false }
               }),
-              prisma.notification.create({
+              prisma.notificationBadge.create({
                 data: {
                   userId: cert.userId,
-                  type: 'SYSTEM',
+                  category: 'system',
                   title: 'Certificado Expirado',
                   message: 'Tu Certificado de Exención ha expirado. Necesitarás generar uno nuevo cumpliendo los requisitos.'
                 }
@@ -57,20 +73,21 @@ export function initExpiryJob() {
             }
 
             if (threshold) {
-              const existingNotif = await prisma.notification.findFirst({
+              const existingNotif = await prisma.notificationBadge.findFirst({
                 where: {
                   userId: cert.userId,
                   title: 'Aviso de Expiración',
-                  message: { contains: threshold }
+                  message: { contains: threshold },
+                  createdAt: { gte: cert.issuedAt }
                 }
               });
 
               if (!existingNotif) {
                 const finalMsg = `${message} Recuerda renovarlo a tiempo. (Aviso: ${threshold})`;
-                await prisma.notification.create({
+                await prisma.notificationBadge.create({
                   data: {
                     userId: cert.userId,
-                    type: 'SYSTEM',
+                    category: 'system',
                     title: 'Aviso de Expiración',
                     message: finalMsg
                   }

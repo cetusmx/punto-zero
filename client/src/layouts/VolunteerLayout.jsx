@@ -1,5 +1,6 @@
 import { Routes, Route, NavLink } from 'react-router-dom'
-import { Box, Paper, BottomNavigation, BottomNavigationAction } from '@mui/material'
+import { Box, Paper, BottomNavigation, BottomNavigationAction, AppBar, Toolbar, Typography } from '@mui/material'
+import BadgeCenter from '../components/notifications/BadgeCenter'
 import HomeIcon from '@mui/icons-material/Home'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import EventNoteIcon from '@mui/icons-material/EventNote'
@@ -21,7 +22,15 @@ const tabs = [
 
 export default function VolunteerLayout() {
   return (
-    <Box sx={{ pb: 7, minHeight: '100vh' }}>
+    <Box sx={{ pb: 7, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <AppBar position="sticky">
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            punto-zero
+          </Typography>
+          <BadgeCenter />
+        </Toolbar>
+      </AppBar>
       <Box sx={{ p: 2, flex: 1 }}>
         <Routes>
           <Route index element={<HomePage />} />

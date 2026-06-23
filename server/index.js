@@ -11,6 +11,7 @@ import agendaRoutes from './src/routes/agenda-routes.js';
 import adminRoutes from './src/routes/admin-routes.js';
 import metricsRoutes from './src/routes/metrics-routes.js';
 import certificateRoutes from './src/routes/certificate-routes.js';
+import notificationsRoutes from './src/routes/notifications-routes.js';
 import { initAttendanceJob } from './src/jobs/attendance-cron.js';
 import { initExpiryJob } from './src/jobs/expiry-cron.js';
 
@@ -28,6 +29,7 @@ app.use('/api/v1/agenda', agendaRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/metrics', metricsRoutes);
 app.use('/api/v1/volunteer/certificates', certificateRoutes);
+app.use('/api/v1/notifications', notificationsRoutes);
 
 app.get('/api/v1/health', (req, res) => {
   res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });

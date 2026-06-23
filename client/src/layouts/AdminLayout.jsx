@@ -20,6 +20,7 @@ import AdminCertificates from '../pages/admin/AdminCertificates'
 import AdminConfig from '../pages/admin/AdminConfig'
 import AdminAdministrators from '../pages/admin/AdminAdministrators'
 import { useAuth } from '../context/AuthContext'
+import BadgeCenter from '../components/notifications/BadgeCenter'
 
 const DRAWER_WIDTH = 240
 
@@ -66,7 +67,8 @@ export default function AdminLayout() {
           <IconButton color="inherit" edge="start" onClick={() => setMobileOpen(!mobileOpen)} sx={{ mr: 2, display: { sm: 'none' } }}>
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6">Admin Panel</Typography>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>Admin Panel</Typography>
+          <BadgeCenter />
         </Toolbar>
       </AppBar>
       <Box component="nav" sx={{ width: { sm: DRAWER_WIDTH }, flexShrink: { sm: 0 } }}>
