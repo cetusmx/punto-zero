@@ -32,7 +32,7 @@ export default function VolunteerLayout() {
       <AppBar position="sticky">
         <Toolbar>
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <img src={logo} alt="Punto Zero" style={{ height: 48, objectFit: 'contain', margin: '-4px 0' }} />
+            <Box component="img" src={logo} alt="Punto Zero" sx={{ height: { xs: 40, sm: 48 }, objectFit: 'contain' }} />
           </Box>
           <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' }, fontWeight: 600 }}>
             Hola, {user?.name?.split(' ')[0] || 'Voluntario'}
@@ -56,7 +56,7 @@ export default function VolunteerLayout() {
           <Route path="perfil" element={<ProfilePage />} />
         </Routes>
       </Box>
-      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }} elevation={3}>
+      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }} elevation={3}>
         <BottomNavigation showLabels>
           {tabs.map((tab) => (
             <BottomNavigationAction
@@ -65,6 +65,14 @@ export default function VolunteerLayout() {
               icon={tab.icon}
               component={NavLink}
               to={tab.path}
+              sx={{
+                minWidth: 'auto',
+                px: { xs: 0, sm: 2 },
+                '& .MuiBottomNavigationAction-label': {
+                  whiteSpace: 'nowrap',
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' }
+                }
+              }}
             />
           ))}
         </BottomNavigation>
