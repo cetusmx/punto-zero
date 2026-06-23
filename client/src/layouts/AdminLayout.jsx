@@ -22,6 +22,7 @@ import AdminConfig from '../pages/admin/AdminConfig'
 import AdminAdministrators from '../pages/admin/AdminAdministrators'
 import { useAuth } from '../context/AuthContext'
 import BadgeCenter from '../components/notifications/BadgeCenter'
+import logo from '../assets/logo.png'
 
 const DRAWER_WIDTH = 240
 
@@ -70,7 +71,7 @@ export default function AdminLayout() {
             <MenuIcon />
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1.5 }}>
-            <Box component="img" src="/src/assets/logo.png" alt="Punto Zero" sx={{ height: { xs: 40, sm: 48 }, objectFit: 'contain' }} />
+            <Box component="img" src={logo} alt="Punto Zero" sx={{ height: { xs: 40, sm: 48 }, objectFit: 'contain' }} />
             <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700 }}>
               Admin Panel
             </Typography>
