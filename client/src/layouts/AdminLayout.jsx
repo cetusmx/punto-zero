@@ -70,7 +70,7 @@ export default function AdminLayout() {
             <MenuIcon />
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1.5 }}>
-            <img src="/src/assets/logo.png" alt="Punto Zero" style={{ height: 32 }} />
+            <img src="/src/assets/logo.png" alt="Punto Zero" style={{ height: 48, objectFit: 'contain', margin: '-4px 0' }} />
             <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700 }}>
               Admin Panel
             </Typography>

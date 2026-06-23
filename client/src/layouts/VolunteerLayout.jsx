@@ -31,11 +31,8 @@ export default function VolunteerLayout() {
     <Box sx={{ pb: 7, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="sticky">
         <Toolbar>
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1.5 }}>
-            <img src={logo} alt="Punto Zero" style={{ height: 32 }} />
-            <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700 }}>
-              punto-zero
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+            <img src={logo} alt="Punto Zero" style={{ height: 48, objectFit: 'contain', margin: '-4px 0' }} />
           </Box>
           <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' }, fontWeight: 600 }}>
             Hola, {user?.name?.split(' ')[0] || 'Voluntario'}
