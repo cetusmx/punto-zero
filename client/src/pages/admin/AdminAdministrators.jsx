@@ -282,7 +282,7 @@ export default function AdminAdministrators() {
                   endAdornment: (
                     <React.Fragment>
                       {optionsLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                      {params.InputProps.endAdornment}
+                      {params.InputProps?.endAdornment}
                     </React.Fragment>
                   ),
                 }}
