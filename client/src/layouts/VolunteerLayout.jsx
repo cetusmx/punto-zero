@@ -1,7 +1,7 @@
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
 import { Box, Paper, BottomNavigation, BottomNavigationAction, AppBar, Toolbar, Typography, IconButton, Tooltip } from '@mui/material'
 import BadgeCenter from '../components/notifications/BadgeCenter'
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
+import SettingsIcon from '@mui/icons-material/Settings'
 import HomeIcon from '@mui/icons-material/Home'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import EventNoteIcon from '@mui/icons-material/EventNote'
@@ -13,6 +13,7 @@ import MySchedulesPage from '../pages/MySchedulesPage'
 import CertificatesPage from '../pages/CertificatesPage'
 import ProfilePage from '../pages/ProfilePage'
 import { useAuth } from '../context/AuthContext'
+import logo from '../assets/logo.png'
 
 const tabs = [
   { label: 'Inicio', icon: <HomeIcon />, path: '/' },
@@ -30,13 +31,19 @@ export default function VolunteerLayout() {
     <Box sx={{ pb: 7, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="sticky">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            punto-zero
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1.5 }}>
+            <img src={logo} alt="Punto Zero" style={{ height: 32 }} />
+            <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700 }}>
+              punto-zero
+            </Typography>
+          </Box>
+          <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' }, fontWeight: 600 }}>
+            Hola, {user?.name?.split(' ')[0] || 'Voluntario'}
           </Typography>
           {(user?.role === 'admin' || user?.role === 'superadmin') && (
             <Tooltip title="Panel de Administración">
               <IconButton color="inherit" onClick={() => navigate('/admin')}>
-                <AdminPanelSettingsIcon />
+                <SettingsIcon />
               </IconButton>
             </Tooltip>
           )}

@@ -69,7 +69,15 @@ export default function AdminLayout() {
           <IconButton color="inherit" edge="start" onClick={() => setMobileOpen(!mobileOpen)} sx={{ mr: 2, display: { sm: 'none' } }}>
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>Admin Panel</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1.5 }}>
+            <img src="/src/assets/logo.png" alt="Punto Zero" style={{ height: 32 }} />
+            <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700 }}>
+              Admin Panel
+            </Typography>
+          </Box>
+          <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' }, fontWeight: 600 }}>
+            Hola, {user?.name?.split(' ')[0] || 'Admin'}
+          </Typography>
           <Tooltip title="Volver a la App (Vista Voluntario)">
             <IconButton color="inherit" onClick={() => navigate('/')}>
               <ExitToAppIcon />
