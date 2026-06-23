@@ -88,7 +88,7 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Notifications System
-  epic-6: in-progress
+  epic-6: done
   6-1-sms-notifications-via-twilio: done
-  6-2-in-app-badge-notification-center: review
+  6-2-in-app-badge-notification-center: done
   epic-6-retrospective: optional

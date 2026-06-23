@@ -22,6 +22,15 @@ const SEED_USERS = [
     status: 'Alta',
     access: 'Habilitado',
   },
+  {
+    name: 'Admin de Prueba',
+    phone: '5555555555',
+    email: 'admin@puntozero.mx',
+    password: 'admin#Password1',
+    role: 'admin',
+    status: 'Alta',
+    access: 'Habilitado',
+  },
 ];
 
 async function main() {
