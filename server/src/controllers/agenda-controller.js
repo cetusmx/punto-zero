@@ -1,5 +1,7 @@
 import prisma from '../../config/prisma-client.js';
 import { calculateUserProgress } from '../services/exemption-service.js';
+import { sendSMS, getTwilioConfig } from '../config/twilio.js';
+import { logger } from '../../config/logger.js';
 
 export async function getProgress(req, res, next) {
   try {
@@ -172,7 +174,8 @@ export async function cancelScheduling(req, res, next) {
     const userId = req.user.id;
 
     const scheduling = await prisma.scheduling.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id) },
+      include: { user: { select: { name: true, phone: true } } }
     });
 
     if (!scheduling) {
@@ -195,6 +198,17 @@ export async function cancelScheduling(req, res, next) {
         cancellationType: 'Volunteer'
       }
     });
+
+    const nowStr = new Date().toLocaleString("en-US", {timeZone: "America/Mexico_City", weekday: "short"});
+    if (nowStr === "Fri") {
+      const config = await getTwilioConfig();
+      if (!config.adminPhone) {
+        logger.warn('Admin phone not configured, skipping Friday cancellation SMS.');
+      } else {
+        const msg = `Alerta: El voluntario ${scheduling.user.name || scheduling.user.phone} ha cancelado su turno de mañana sábado.`;
+        await sendSMS(config.adminPhone, msg);
+      }
+    }
 
     res.json({
       message: 'Turno cancelado exitosamente.',

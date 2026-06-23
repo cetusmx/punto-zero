@@ -1,9 +1,10 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/prisma-client.js';
-import { sendSMS } from '../config/twilio.js';
+import { sendSMS, getTwilioConfig } from '../config/twilio.js';
 import { generateOtp, verifyOtp } from '../services/otp-service.js';
 import { createPendingRegistration, consumePendingRegistration } from '../services/pending-registration.js';
+import { logger } from '../../config/logger.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
 const JWT_EXPIRY = '7d';
@@ -298,7 +299,12 @@ export async function changeStatus(req, res, next) {
 
     // Special rule: Baja -> Alta requires SMS to admin
     if (user.status === 'Baja' && targetStatus === 'Alta') {
-      await sendSMS(process.env.ADMIN_PHONE || '+520000000000', `Solicitud de reactivación: ${user.name} (${user.phone}) desea volver a Alta.`);
+      const config = await getTwilioConfig();
+      if (!config.adminPhone) {
+        logger.warn('Admin phone not configured, skipping reactivation SMS.');
+      } else {
+        await sendSMS(config.adminPhone, `Solicitud de reactivación: ${user.name} (${user.phone}) desea volver a Alta.`);
+      }
       // Per PRD UJ-8: Reverting from Baja needs authorization. 
       // For MVP, we will set it to Alta but notify. If a strict block is needed, we'd need a "Pending" status.
     }

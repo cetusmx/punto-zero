@@ -1,38 +1,33 @@
 import prisma from '../../config/prisma-client.js';
+import { clearTwilioCache } from '../config/twilio.js';
 
 export async function getConfig(req, res, next) {
   try {
     const user = req.user;
-    let links = {
+    let configData = {
       whatsapp_avisos_url: '',
       whatsapp_abierto_url: ''
     };
 
-    if (user && user.status === 'Alta') {
+    const keysToFetch = ['whatsapp_avisos_url', 'whatsapp_abierto_url'];
+    if (user && (user.role === 'admin' || user.role === 'superadmin')) {
+      keysToFetch.push('twilio_account_sid', 'twilio_auth_token', 'twilio_phone_number', 'admin_phone');
+    }
+
+    if (user && (user.status === 'Alta' || user.role === 'admin' || user.role === 'superadmin')) {
       const configs = await prisma.appConfig.findMany({
         where: {
-          key: { in: ['whatsapp_avisos_url', 'whatsapp_abierto_url'] }
+          key: { in: keysToFetch }
         }
       });
-      links = {
-        whatsapp_avisos_url: configs.find(c => c.key === 'whatsapp_avisos_url')?.value || '',
-        whatsapp_abierto_url: configs.find(c => c.key === 'whatsapp_abierto_url')?.value || '',
-      };
-    } else if (user && (user.role === 'admin' || user.role === 'superadmin')) {
-      // Admins should be able to fetch the current config regardless of their 'Alta' status
-      const configs = await prisma.appConfig.findMany({
-        where: {
-          key: { in: ['whatsapp_avisos_url', 'whatsapp_abierto_url'] }
-        }
+      
+      keysToFetch.forEach(key => {
+        configData[key] = configs.find(c => c.key === key)?.value || '';
       });
-      links = {
-        whatsapp_avisos_url: configs.find(c => c.key === 'whatsapp_avisos_url')?.value || '',
-        whatsapp_abierto_url: configs.find(c => c.key === 'whatsapp_abierto_url')?.value || '',
-      };
     }
 
     res.status(200).json({
-      data: links,
+      data: configData,
       message: 'Success',
       error: null,
       statusCode: 200
@@ -44,17 +39,29 @@ export async function getConfig(req, res, next) {
 
 export async function updateConfig(req, res, next) {
   try {
-    const urlsToUpdate = [];
+    const fieldsToUpdate = [
+      'whatsapp_avisos_url', 
+      'whatsapp_abierto_url',
+      'twilio_account_sid',
+      'twilio_auth_token',
+      'twilio_phone_number',
+      'admin_phone'
+    ];
     
-    if (req.body.whatsapp_avisos_url !== undefined) {
-      urlsToUpdate.push({ key: 'whatsapp_avisos_url', value: typeof req.body.whatsapp_avisos_url === 'string' ? req.body.whatsapp_avisos_url.trim() : '' });
-    }
+    const itemsToUpsert = [];
     
-    if (req.body.whatsapp_abierto_url !== undefined) {
-      urlsToUpdate.push({ key: 'whatsapp_abierto_url', value: typeof req.body.whatsapp_abierto_url === 'string' ? req.body.whatsapp_abierto_url.trim() : '' });
+    for (const field of fieldsToUpdate) {
+      if (req.body[field] !== undefined) {
+        itemsToUpsert.push({ 
+          key: field, 
+          value: typeof req.body[field] === 'string' ? req.body[field].trim() : '' 
+        });
+      }
     }
 
-    for (const item of urlsToUpdate) {
+    let twilioUpdated = false;
+
+    for (const item of itemsToUpsert) {
       if (item.value) {
         await prisma.appConfig.upsert({
           where: { key: item.key },
@@ -66,6 +73,14 @@ export async function updateConfig(req, res, next) {
           where: { key: item.key }
         });
       }
+      
+      if (item.key.startsWith('twilio_') || item.key === 'admin_phone') {
+        twilioUpdated = true;
+      }
+    }
+
+    if (twilioUpdated) {
+      clearTwilioCache();
     }
 
     res.status(200).json({

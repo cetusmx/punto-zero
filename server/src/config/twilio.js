@@ -1,18 +1,43 @@
 import { logger } from '../../config/logger.js';
+import prisma from '../../config/prisma-client.js';
 
 let twilioClient = null;
+let cachedConfig = null;
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
+export function clearTwilioCache() {
+  cachedConfig = null;
+  twilioClient = null;
+}
+
+export async function getTwilioConfig() {
+  if (cachedConfig) return cachedConfig;
+  
+  const configs = await prisma.appConfig.findMany({
+    where: {
+      key: { in: ['twilio_account_sid', 'twilio_auth_token', 'twilio_phone_number', 'admin_phone'] }
+    }
+  });
+
+  const dbConfig = {
+    accountSid: configs.find(c => c.key === 'twilio_account_sid')?.value || process.env.TWILIO_ACCOUNT_SID,
+    authToken: configs.find(c => c.key === 'twilio_auth_token')?.value || process.env.TWILIO_AUTH_TOKEN,
+    twilioPhone: configs.find(c => c.key === 'twilio_phone_number')?.value || process.env.TWILIO_PHONE_NUMBER,
+    adminPhone: configs.find(c => c.key === 'admin_phone')?.value || process.env.ADMIN_PHONE,
+  };
+
+  cachedConfig = dbConfig;
+  return dbConfig;
+}
 
 async function getTwilioClient() {
   if (twilioClient) return twilioClient;
 
-  if (accountSid && authToken) {
+  const config = await getTwilioConfig();
+
+  if (config.accountSid && config.authToken) {
     try {
       const { default: twilio } = await import('twilio');
-      twilioClient = twilio(accountSid, authToken);
+      twilioClient = twilio(config.accountSid, config.authToken);
       logger.info('Twilio client initialized');
       return twilioClient;
     } catch (err) {
@@ -27,19 +52,21 @@ async function getTwilioClient() {
 
 export async function sendSMS(to, body) {
   const client = await getTwilioClient();
+  const config = await getTwilioConfig();
+  const fromPhone = config.twilioPhone;
 
-  if (client) {
+  if (client && fromPhone) {
     try {
       const message = await client.messages.create({
         body,
         to,
-        from: twilioPhone,
+        from: fromPhone,
       });
       logger.info(`SMS sent to ${to}, sid: ${message.sid}`);
       return { success: true, sid: message.sid };
     } catch (err) {
       logger.error(`Twilio SMS failed for ${to}: ${err.message}`);
-      throw new Error('Error al enviar el SMS. Intenta de nuevo.');
+      return { success: false, error: err.message };
     }
   }
 

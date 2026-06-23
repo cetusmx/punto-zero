@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, Card, CardContent, TextField, Button, Snackbar, Alert, CircularProgress } from '@mui/material'
+import { Box, Typography, Card, CardContent, TextField, Button, Snackbar, Alert, CircularProgress, Divider } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
 import { getConfig, updateConfig } from '../../services/admin.js'
 
 export default function AdminConfig() {
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
-  const [form, setForm] = useState({ whatsapp_avisos_url: '', whatsapp_abierto_url: '' })
+  const [form, setForm] = useState({ 
+    whatsapp_avisos_url: '', 
+    whatsapp_abierto_url: '',
+    twilio_account_sid: '',
+    twilio_auth_token: '',
+    twilio_phone_number: '',
+    admin_phone: ''
+  })
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
   async function fetchConfig() {
@@ -14,7 +21,11 @@ export default function AdminConfig() {
       const { data } = await getConfig()
       setForm({
         whatsapp_avisos_url: data.data.whatsapp_avisos_url || '',
-        whatsapp_abierto_url: data.data.whatsapp_abierto_url || ''
+        whatsapp_abierto_url: data.data.whatsapp_abierto_url || '',
+        twilio_account_sid: data.data.twilio_account_sid || '',
+        twilio_auth_token: data.data.twilio_auth_token || '',
+        twilio_phone_number: data.data.twilio_phone_number || '',
+        admin_phone: data.data.admin_phone || ''
       })
     } catch (err) {
       console.error('Error fetching config', err)
@@ -76,12 +87,13 @@ export default function AdminConfig() {
         Configuración
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 4 }}>
-        Gestiona los enlaces globales de WhatsApp para la comunidad.
+        Gestiona los enlaces y variables del sistema.
       </Typography>
 
       <Card elevation={0} sx={{ borderRadius: '24px', border: '1px solid', borderColor: 'divider' }}>
         <CardContent sx={{ p: 4 }}>
           <Box component="form" onSubmit={handleSubmit} noValidate>
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Grupos de WhatsApp</Typography>
             <TextField
               fullWidth
               label="URL del Grupo de Avisos"
@@ -103,6 +115,47 @@ export default function AdminConfig() {
               placeholder="https://chat.whatsapp.com/..."
               error={!!abiertoError}
               helperText={abiertoError}
+              sx={{ mb: 4 }}
+            />
+
+            <Divider sx={{ mb: 4 }} />
+
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>SMS y Twilio</Typography>
+            <TextField
+              fullWidth
+              label="Account SID"
+              name="twilio_account_sid"
+              value={form.twilio_account_sid}
+              onChange={handleChange}
+              placeholder="AC..."
+              sx={{ mb: 3 }}
+            />
+            <TextField
+              fullWidth
+              label="Auth Token"
+              name="twilio_auth_token"
+              type="password"
+              value={form.twilio_auth_token}
+              onChange={handleChange}
+              placeholder="••••••••••••••••"
+              sx={{ mb: 3 }}
+            />
+            <TextField
+              fullWidth
+              label="Teléfono Twilio"
+              name="twilio_phone_number"
+              value={form.twilio_phone_number}
+              onChange={handleChange}
+              placeholder="+1234567890"
+              sx={{ mb: 3 }}
+            />
+            <TextField
+              fullWidth
+              label="Teléfono Admin (Notificaciones)"
+              name="admin_phone"
+              value={form.admin_phone}
+              onChange={handleChange}
+              placeholder="+521234567890"
               sx={{ mb: 4 }}
             />
 
