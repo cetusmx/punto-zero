@@ -76,12 +76,22 @@ export default function AdminAdministrators() {
     };
   }, [searchQuery]);
 
-  const handleOpenPromoteModal = () => {
+  const handleOpenPromoteModal = async () => {
     setSearchQuery('');
     setOptions([]);
     setSelectedUser(null);
     setModalError('');
     setOpenModal(true);
+
+    setOptionsLoading(true);
+    try {
+      const { data } = await getEligibleUsersForAdmin('');
+      setOptions(data);
+    } catch (err) {
+      console.error('Error fetching eligible users on open', err);
+    } finally {
+      setOptionsLoading(false);
+    }
   };
 
   const handlePromote = async () => {
