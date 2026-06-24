@@ -90,3 +90,20 @@ export async function claimReconocimiento(req, res, next) {
     next(err);
   }
 }
+
+export async function getAllCertificates(req, res, next) {
+  try {
+    const certificates = await prisma.certificateQR.findMany({
+      include: {
+        user: {
+          select: { id: true, name: true, phone: true, email: true }
+        }
+      },
+      orderBy: { issuedAt: 'desc' }
+    });
+
+    res.json(certificates);
+  } catch (err) {
+    next(err);
+  }
+}

@@ -52,11 +52,16 @@ router.get('/users', authenticate, authorizeAdmin, listUsers);
 router.put('/users/:id', authenticate, authorizeAdmin, updateUserProfile);
 router.post('/users/:id/block', authenticate, authorizeAdmin, blockUser);
 
+import { getAllCertificates } from '../controllers/certificate-controller.js';
+
 // Superadmin Routes
 router.get('/administrators', authenticate, authorizeSuperAdmin, getAdministrators);
 router.get('/administrators/eligible-users', authenticate, authorizeSuperAdmin, getEligibleUsers);
 router.post('/administrators/:id/promote', authenticate, authorizeSuperAdmin, promoteToAdmin);
 router.post('/administrators/:id/demote', authenticate, authorizeSuperAdmin, demoteToVolunteer);
 router.post('/administrators/:id/block', authenticate, authorizeSuperAdmin, toggleAdminBlock);
+
+// Certificates (Admin View)
+router.get('/certificates', authenticate, authorizeAdmin, getAllCertificates);
 
 export default router;
