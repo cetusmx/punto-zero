@@ -116,7 +116,7 @@ export async function updateTurnStatus(req, res, next) {
       return res.json({ message: 'Estatus sin cambios.', turn: currentTurn });
     }
 
-    // Validation: Cannot modify a turn if it is part of an already issued certificate
+    // Validation: Check if it is part of an already issued certificate
     const conflictingCert = await prisma.certificateQR.findFirst({
       where: {
         userId: currentTurn.userId,
@@ -125,7 +125,17 @@ export async function updateTurnStatus(req, res, next) {
     });
 
     if (conflictingCert) {
-      return res.status(400).json({ error: { message: 'No se puede modificar esta reserva porque ya forma parte de un certificado emitido.' } });
+      if (status === 'Falta') {
+        // Automatically revoke the conflicting certificate(s) since this attendance was part of it
+        await prisma.certificateQR.deleteMany({
+          where: {
+            userId: currentTurn.userId,
+            issuedAt: { gte: currentTurn.saturdayDate }
+          }
+        });
+      } else {
+        return res.status(400).json({ error: { message: 'No se puede modificar esta reserva a este estatus porque ya forma parte de un certificado emitido. Solo es posible asignarle Falta, lo cual revocará el certificado automáticamente.' } });
+      }
     }
 
     const oldProgress = await calculateUserProgress(currentTurn.userId);
