@@ -124,6 +124,9 @@ export async function updateTurnStatus(req, res, next) {
           }
         });
       }
+    } else if (status === 'Asistio') {
+      const { checkAndAutoGenerateCertificate } = await import('../services/exemption-service.js');
+      await checkAndAutoGenerateCertificate(turn.userId);
     }
 
     res.json({ message: 'Estatus actualizado correctamente.', turn });
@@ -329,6 +332,9 @@ export async function assignReplacementTurn(req, res, next) {
         include: { user: true, point: true }
       });
     }
+
+    const { checkAndAutoGenerateCertificate } = await import('../services/exemption-service.js');
+    await checkAndAutoGenerateCertificate(turn.userId);
 
     res.status(201).json({ message: 'Reemplazo asignado exitosamente.', turn });
   } catch (err) {

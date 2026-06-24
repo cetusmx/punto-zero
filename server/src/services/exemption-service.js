@@ -183,3 +183,64 @@ export async function calculateUserProgress(userId) {
     isEligible
   };
 }
+
+/**
+ * Checks if the user is eligible for a certificate and automatically generates it.
+ * Notifies the user via NotificationBadge.
+ */
+export async function checkAndAutoGenerateCertificate(userId) {
+  try {
+    const parsedUserId = Number(userId);
+    const progress = await calculateUserProgress(parsedUserId);
+
+    if (!progress.isEligible) {
+      return null;
+    }
+
+    // Wrap the generation in a transaction
+    return await prisma.$transaction(async (tx) => {
+      // Lock the user row to prevent concurrent generations
+      await tx.$executeRaw`SELECT id FROM users WHERE id = ${parsedUserId} FOR UPDATE`;
+
+      // Re-check progress inside lock to guarantee safety
+      const lockedProgress = await calculateUserProgress(parsedUserId);
+      if (!lockedProgress.isEligible) {
+        return null;
+      }
+
+      const issuedAt = new Date();
+      let expiresAt = null;
+
+      if (lockedProgress.cycleType === 'Exencion') {
+        const { addYears } = await import('date-fns');
+        expiresAt = addYears(issuedAt, 1);
+      }
+
+      const certificate = await tx.certificateQR.create({
+        data: {
+          userId: parsedUserId,
+          type: lockedProgress.cycleType,
+          issuedAt,
+          expiresAt,
+          isActive: true,
+          attendancesAtIssuance: lockedProgress.totalAttendances
+        }
+      });
+
+      // Send a notification badge
+      await tx.notificationBadge.create({
+        data: {
+          userId: parsedUserId,
+          category: 'system',
+          title: `¡Certificado de ${lockedProgress.cycleType} Generado!`,
+          message: `Has completado 6 asistencias exitosamente. Tu código QR ha sido emitido de forma automática y ya puedes visualizarlo en tu perfil.`
+        }
+      });
+
+      return certificate;
+    });
+  } catch (error) {
+    console.error(`Failed to auto-generate certificate for user ${userId}:`, error);
+    return null;
+  }
+}

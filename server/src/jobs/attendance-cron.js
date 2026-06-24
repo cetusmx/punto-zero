@@ -12,17 +12,35 @@ export function initAttendanceJob() {
       const today = new Date();
       today.setHours(12, 0, 0, 0); // Normalized Saturday date
 
-      const result = await prisma.scheduling.updateMany({
+      // 1. First, find all users who have a 'Pendiente' turn today
+      const pendingTurns = await prisma.scheduling.findMany({
         where: {
           saturdayDate: today,
           status: 'Pendiente'
         },
-        data: {
-          status: 'Asistio'
-        }
+        select: { id: true, userId: true }
       });
 
-      logger.info(`[CRON] Successfully confirmed attendance for ${result.count} turns.`);
+      if (pendingTurns.length > 0) {
+        // 2. Update their statuses to 'Asistio'
+        await prisma.scheduling.updateMany({
+          where: {
+            id: { in: pendingTurns.map(t => t.id) }
+          },
+          data: {
+            status: 'Asistio'
+          }
+        });
+
+        // 3. Check for auto-generation for each unique user
+        const { checkAndAutoGenerateCertificate } = await import('../services/exemption-service.js');
+        const uniqueUserIds = [...new Set(pendingTurns.map(t => t.userId))];
+        for (const uid of uniqueUserIds) {
+          await checkAndAutoGenerateCertificate(uid);
+        }
+      }
+
+      logger.info(`[CRON] Successfully confirmed attendance for ${pendingTurns.length} turns.`);
     } catch (err) {
       logger.error('[CRON] Error during automated attendance confirmation:', err.message);
     }
