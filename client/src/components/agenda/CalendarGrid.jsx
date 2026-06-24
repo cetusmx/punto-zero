@@ -12,7 +12,7 @@ import {
 import { es } from 'date-fns/locale'
 import logoBanana from '../../assets/logoBanana.png'
 
-export default function CalendarGrid({ selectedDate, onDateSelect }) {
+export default function CalendarGrid({ selectedDate, onDateSelect, occupiedDates = [] }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
@@ -116,6 +116,7 @@ export default function CalendarGrid({ selectedDate, onDateSelect }) {
           const isCurrentMonth = day.getMonth() === currentMonth.getMonth()
           const selectable = isSaturday(day) && day >= new Date()
           const isSelected = selectedDate && isSameDay(day, selectedDate)
+          const isOccupied = occupiedDates.some(d => isSameDay(day, d))
           const today = isToday(day)
 
           return (
@@ -129,7 +130,7 @@ export default function CalendarGrid({ selectedDate, onDateSelect }) {
               }}
             >
               <Paper
-                elevation={isSelected ? 4 : 0}
+                elevation={isSelected || isOccupied ? 4 : 0}
                 onClick={() => selectable && onDateSelect(day)}
                 sx={{
                   width: '100%',
@@ -141,17 +142,17 @@ export default function CalendarGrid({ selectedDate, onDateSelect }) {
                   cursor: selectable ? 'pointer' : 'default',
                   borderRadius: '16px',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  bgcolor: isSelected 
+                  bgcolor: (isSelected || isOccupied)
                     ? 'primary.main' 
                     : selectable 
                       ? 'white' 
                       : 'transparent',
-                  color: isSelected 
+                  color: (isSelected || isOccupied)
                     ? 'white' 
                     : selectable 
                       ? 'primary.main' 
                       : isCurrentMonth ? 'text.secondary' : 'text.disabled',
-                  border: isSelected 
+                  border: (isSelected || isOccupied)
                     ? 'none' 
                     : selectable 
                       ? '1px solid' 
@@ -161,17 +162,17 @@ export default function CalendarGrid({ selectedDate, onDateSelect }) {
                     : selectable 
                       ? alpha('#41703f', 0.15) 
                       : 'transparent',
-                  boxShadow: selectable && !isSelected ? '0 2px 6px rgba(65, 112, 63, 0.08)' : 'none',
+                  boxShadow: selectable && !(isSelected || isOccupied) ? '0 2px 6px rgba(65, 112, 63, 0.08)' : 'none',
                   '&:hover': {
-                    bgcolor: selectable && !isSelected ? alpha('#41703f', 0.04) : undefined,
-                    transform: selectable && !isSelected ? 'translateY(-2px)' : 'none',
-                    boxShadow: selectable && !isSelected ? '0 4px 12px rgba(65, 112, 63, 0.12)' : undefined,
+                    bgcolor: selectable && !(isSelected || isOccupied) ? alpha('#41703f', 0.04) : undefined,
+                    transform: selectable && !(isSelected || isOccupied) ? 'translateY(-2px)' : 'none',
+                    boxShadow: selectable && !(isSelected || isOccupied) ? '0 4px 12px rgba(65, 112, 63, 0.12)' : undefined,
                   },
                   position: 'relative',
                   overflow: 'hidden'
                 }}
               >
-                {selectable && !isSelected && (
+                {selectable && !(isSelected || isOccupied) && (
                   <Box sx={{ 
                     position: 'absolute', 
                     bottom: 4, 
@@ -181,7 +182,7 @@ export default function CalendarGrid({ selectedDate, onDateSelect }) {
                     bgcolor: 'primary.main' 
                   }} />
                 )}
-                {isSelected && (
+                {(isSelected || isOccupied) && (
                   <Box 
                     component="img" 
                     src={logoBanana} 
@@ -191,21 +192,23 @@ export default function CalendarGrid({ selectedDate, onDateSelect }) {
                       width: '60%', 
                       height: '60%', 
                       objectFit: 'contain', 
-                      zIndex: 0,
+                      zIndex: 1,
                       opacity: 0.9
                     }} 
                   />
                 )}
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
-                    fontWeight: selectable || today ? 800 : 400,
-                    fontSize: { xs: '0.9rem', sm: '1.1rem' },
-                    zIndex: 1
-                  }}
-                >
-                  {format(day, 'd')}
-                </Typography>
+                {!(isSelected || isOccupied) && (
+                  <Typography 
+                    variant="body1" 
+                    sx={{ 
+                      fontWeight: selectable || today ? 800 : 400,
+                      fontSize: { xs: '0.9rem', sm: '1.1rem' },
+                      zIndex: 1
+                    }}
+                  >
+                    {format(day, 'd')}
+                  </Typography>
+                )}
               </Paper>
             </Box>
           )

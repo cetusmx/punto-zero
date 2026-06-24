@@ -14,8 +14,10 @@ import { format, isSameDay, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import CalendarGrid from '../components/agenda/CalendarGrid'
 import api from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 
 export default function AgendaPage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [bookingLoading, setBookingLoading] = useState(false)
@@ -174,7 +176,13 @@ export default function AgendaPage() {
             boxShadow: '0 2px 8px rgba(0,0,0,.06)'
           }}>
             <CardContent sx={{ p: 3 }}>
-              <CalendarGrid selectedDate={selectedDate} onDateSelect={setSelectedDate} />
+              <CalendarGrid 
+                selectedDate={selectedDate} 
+                onDateSelect={setSelectedDate} 
+                occupiedDates={data.schedulings
+                  .filter(s => s.userId === user?.id)
+                  .map(s => parseISO(s.saturdayDate))}
+              />
             </CardContent>
           </Card>
         </Box>
