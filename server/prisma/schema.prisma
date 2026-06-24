@@ -89,7 +89,6 @@ model Scheduling {
   point      CollectionPoint @relation(fields: [pointId], references: [id])
   attendance Attendance?
 
-  @@unique([pointId, saturdayDate])
   @@map("schedulings")
 }
 
