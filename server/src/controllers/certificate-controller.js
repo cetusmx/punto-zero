@@ -23,7 +23,7 @@ export async function claimExencion(req, res, next) {
 
     const newCertificate = await prisma.$transaction(async (tx) => {
       // Lock the user row to prevent concurrent claims
-      await tx.$executeRaw`SELECT id FROM User WHERE id = ${userId} FOR UPDATE`;
+      await tx.$executeRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
 
       const progress = await calculateUserProgress(userId);
 
@@ -60,7 +60,7 @@ export async function claimReconocimiento(req, res, next) {
     const userId = req.user.id;
 
     const newCertificate = await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT id FROM User WHERE id = ${userId} FOR UPDATE`;
+      await tx.$executeRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
 
       const progress = await calculateUserProgress(userId);
 
