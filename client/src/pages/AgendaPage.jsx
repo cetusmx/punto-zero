@@ -73,7 +73,7 @@ export default function AgendaPage() {
     try {
       await api.post('/agenda/schedule', {
         pointId: selectedSlot.id,
-        saturdayDate: selectedDate.toISOString(),
+        saturdayDate: format(selectedDate, 'yyyy-MM-dd'),
         acceptedTerms
       })
       setSuccess('¡Turno agendado con éxito!')
