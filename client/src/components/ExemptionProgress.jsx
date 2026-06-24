@@ -141,6 +141,17 @@ export default function ExemptionProgress() {
               </Typography>
             </Box>
           )}
+
+          {progress.lastResetDate && (
+            <Box sx={{ mt: 1, p: 1.5, bgcolor: alpha(theme.palette.warning.main, 0.1), borderRadius: '12px' }}>
+              <Typography variant="body2" color="warning.dark" sx={{ fontWeight: 600 }}>
+                Tu progreso fue reiniciado el {(() => {
+                  const [y, m, d] = progress.lastResetDate.split('T')[0].split('-');
+                  return format(new Date(y, m - 1, d), "d 'de' MMMM, yyyy", { locale: es });
+                })()} por acumular 3 faltas.
+              </Typography>
+            </Box>
+          )}
         </Stack>
       </CardContent>
     </Card>

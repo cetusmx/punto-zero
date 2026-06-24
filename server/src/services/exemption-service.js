@@ -92,6 +92,7 @@ export async function calculateUserProgress(userId) {
   let currentWindowAttendances = [];
   let currentWindowDeadline = null;
   let faltasInWindow = 0;
+  let lastResetDate = null;
 
   for (const att of attendances) {
     const attDate = att.saturdayDate;
@@ -129,6 +130,7 @@ export async function calculateUserProgress(userId) {
       if (att.status === 'Falta') {
         faltasInWindow++;
         if (faltasInWindow >= 3) {
+          lastResetDate = attDate;
           currentWindowStart = null;
           currentWindowDeadline = null;
           currentWindowAttendances = [];
@@ -146,7 +148,8 @@ export async function calculateUserProgress(userId) {
       faltas: 0,
       deadline: null,
       remaining: 6,
-      isEligible: false
+      isEligible: false,
+      lastResetDate
     };
   }
 
@@ -169,7 +172,8 @@ export async function calculateUserProgress(userId) {
       faltas: 0,
       deadline: null,
       remaining: 6,
-      isEligible: false
+      isEligible: false,
+      lastResetDate
     };
   }
 
@@ -180,7 +184,8 @@ export async function calculateUserProgress(userId) {
     faltas,
     deadline: currentWindowDeadline,
     remaining,
-    isEligible
+    isEligible,
+    lastResetDate
   };
 }
 
