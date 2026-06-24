@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardContent, LinearProgress, Stack, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Card, CardContent, LinearProgress, Stack, alpha, useTheme, Tooltip } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import api from '../lib/api';
@@ -83,26 +84,46 @@ export default function ExemptionProgress() {
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
             <Box>
-              <Typography variant="caption" color="text.secondary" display="block">Atenciones</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                Atenciones
+                <Tooltip title="Número de asistencias completadas y validadas en el periodo actual." arrow placement="top">
+                  <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled', cursor: 'pointer' }} />
+                </Tooltip>
+              </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>{displayAttendances}</Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary" display="block">Restantes</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                Restantes
+                <Tooltip title="Atenciones que te faltan para completar el programa y obtener tu exención." arrow placement="top">
+                  <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled', cursor: 'pointer' }} />
+                </Tooltip>
+              </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>{progress.remaining}</Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary" display="block">Faltas</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                Faltas
+                <Tooltip title="Turnos agendados a los que no asististe. Acumular 3 faltas reinicia todo tu progreso." arrow placement="top">
+                  <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled', cursor: 'pointer' }} />
+                </Tooltip>
+              </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600, color: progress.faltas >= 2 ? 'error.main' : 'text.primary' }}>
                 {progress.faltas} {progress.faltas >= 2 && '(Riesgo de reinicio)'}
               </Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary" display="block">Fecha Límite</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                Fecha Límite
+                <Tooltip title="Tienes 6 meses a partir de tu primera asistencia para completar las 6 atenciones." arrow placement="top">
+                  <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled', cursor: 'pointer' }} />
+                </Tooltip>
+              </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {progress.deadline ? (() => {
                   const [y, m, d] = progress.deadline.split('T')[0].split('-');
                   return format(new Date(y, m - 1, d), "d 'de' MMMM, yyyy", { locale: es });
-                })() : 'N/A'}
+                })() : 'En espera de 1ª asistencia'}
               </Typography>
             </Box>
           </Box>
