@@ -52,11 +52,7 @@ export default function AdminAdministrators() {
   useEffect(() => {
     let active = true;
 
-    if (searchQuery === '') {
-      // eslint-disable-next-line
-      setOptions([]);
-      return undefined;
-    }
+    // Always fetch, even if query is empty to show a default list
 
     const delayDebounce = setTimeout(async () => {
       setOptionsLoading(true);
