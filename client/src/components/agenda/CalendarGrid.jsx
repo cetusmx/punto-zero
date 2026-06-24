@@ -10,6 +10,7 @@ import {
   startOfWeek, endOfWeek 
 } from 'date-fns'
 import { es } from 'date-fns/locale'
+import logoBanana from '../../assets/logoBanana.png'
 
 export default function CalendarGrid({ selectedDate, onDateSelect }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -179,6 +180,21 @@ export default function CalendarGrid({ selectedDate, onDateSelect }) {
                     borderRadius: '50%', 
                     bgcolor: 'primary.main' 
                   }} />
+                )}
+                {isSelected && (
+                  <Box 
+                    component="img" 
+                    src={logoBanana} 
+                    alt="Banana" 
+                    sx={{ 
+                      position: 'absolute', 
+                      width: '60%', 
+                      height: '60%', 
+                      objectFit: 'contain', 
+                      zIndex: 0,
+                      opacity: 0.9
+                    }} 
+                  />
                 )}
                 <Typography 
                   variant="body1" 
