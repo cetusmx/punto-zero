@@ -27,9 +27,10 @@ export async function calculateUserProgress(userId) {
   });
 
   let cycleType = 'Exencion';
+  let activeExencion = null;
   if (latestCertificate) {
     // Check if the user has an active Exencion
-    const activeExencion = await prisma.certificateQR.findFirst({
+    activeExencion = await prisma.certificateQR.findFirst({
       where: {
         userId: parsedUserId,
         type: 'Exencion',
