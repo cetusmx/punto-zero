@@ -218,7 +218,6 @@ export default function AgendaPage() {
                 <Typography variant="h5" sx={{ fontWeight: 600 }}>
                   {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
                 </Typography>
-                <Chip label={`${selectedDaySlots.length} puntos`} color="primary" variant="outlined" />
               </Box>
 
               {loading ? (
