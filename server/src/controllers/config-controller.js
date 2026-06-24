@@ -13,7 +13,9 @@ export async function getConfig(req, res, next) {
       keysToFetch.push('twilio_account_sid', 'twilio_auth_token', 'twilio_phone_number', 'admin_phone');
     }
 
-    if (user && (user.status === 'Alta' || user.role === 'admin' || user.role === 'superadmin')) {
+    const dbUser = user ? await prisma.user.findUnique({ where: { id: user.id } }) : null;
+
+    if (dbUser && (dbUser.status === 'Alta' || dbUser.role === 'admin' || dbUser.role === 'superadmin')) {
       const configs = await prisma.appConfig.findMany({
         where: {
           key: { in: keysToFetch }

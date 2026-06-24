@@ -1,0 +1,1 @@
+const makeValidUrl = (url) => { if (!url) return ''; let urlStr = url.trim(); if (!/^https?:\/\//i.test(urlStr)) { urlStr = 'https://' + urlStr; } try { new URL(urlStr); return urlStr; } catch { return ''; } }; console.log(makeValidUrl('https://chat.whatsapp.com/KYD7WsfthcQGt5vmqcK5pE'));
