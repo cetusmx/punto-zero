@@ -179,7 +179,7 @@ export default function CertificatesPage() {
   // Single source of truth from backend
   const isEligible = progress?.isEligible
 
-  const userName = user ? `${user.firstName} ${user.lastName}` : 'Voluntario'
+  const userName = user?.name ? user.name : 'Voluntario'
 
   return (
     <Box sx={{ py: 2 }}>
