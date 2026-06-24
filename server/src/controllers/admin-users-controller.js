@@ -10,25 +10,27 @@ export async function listUsers(req, res, next) {
     const limitNum = parseInt(limit) || 20;
     const skip = (pageNum - 1) * limitNum;
 
-    let whereClause = {};
+    let whereClause = { role: 'volunteer' };
 
     if (q) {
       const isStatusOrAccess = ['Alta', 'Pausa', 'Baja', 'Habilitado', 'Bloqueado'].includes(q);
 
-      whereClause = {
-        OR: [
-          { name: { contains: q } },
-          { phone: { contains: q } },
-          { email: { contains: q } }
-        ]
-      };
+      whereClause.AND = [
+        {
+          OR: [
+            { name: { contains: q } },
+            { phone: { contains: q } },
+            { email: { contains: q } }
+          ]
+        }
+      ];
 
       const qLower = q.toLowerCase();
       const statusMatch = ['Alta', 'Pausa', 'Baja'].find(s => s.toLowerCase() === qLower);
       const accessMatch = ['Habilitado', 'Bloqueado'].find(s => s.toLowerCase() === qLower);
       
-      if (statusMatch) whereClause.OR.push({ status: statusMatch });
-      if (accessMatch) whereClause.OR.push({ access: accessMatch });
+      if (statusMatch) whereClause.AND[0].OR.push({ status: statusMatch });
+      if (accessMatch) whereClause.AND[0].OR.push({ access: accessMatch });
     }
 
     const today = new Date();
