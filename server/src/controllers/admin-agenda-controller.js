@@ -4,33 +4,45 @@ import { isAfter } from 'date-fns';
 
 export async function getSaturdayTurns(req, res, next) {
   try {
-    const { date } = req.query;
+    const { date, month } = req.query;
 
-    if (!date) {
-      return res.status(400).json({ error: { message: 'Se requiere una fecha (YYYY-MM-DD).' } });
+    if (!date && !month) {
+      return res.status(400).json({ error: { message: 'Se requiere un date (YYYY-MM-DD) o un month (YYYY-MM).' } });
     }
 
-    const saturday = new Date(date);
-    saturday.setHours(12, 0, 0, 0);
+    let targetDates = [];
 
-    // Get all schedulings for this Saturday
+    if (date) {
+      const saturday = new Date(date);
+      saturday.setHours(12, 0, 0, 0);
+      targetDates.push(saturday);
+    } else if (month) {
+      const [y, m] = month.split('-');
+      const year = parseInt(y);
+      const monthNum = parseInt(m) - 1; // 0-indexed
+      const dateCursor = new Date(year, monthNum, 1);
+      dateCursor.setHours(12, 0, 0, 0);
+      
+      while (dateCursor.getMonth() === monthNum) {
+        if (dateCursor.getDay() === 6) {
+          targetDates.push(new Date(dateCursor));
+        }
+        dateCursor.setDate(dateCursor.getDate() + 1);
+      }
+    }
+
+    // Get all schedulings for the target dates
     const schedulings = await prisma.scheduling.findMany({
-      where: { saturdayDate: saturday },
+      where: { saturdayDate: { in: targetDates } },
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            email: true,
-            status: true
-          }
+          select: { id: true, name: true, phone: true, email: true, status: true }
         },
         point: true
       }
     });
 
-    // Get relevant collection points (active OR have a scheduling for this date)
+    // Get relevant collection points
     const activePoints = await prisma.collectionPoint.findMany({
       where: {
         OR: [
@@ -41,28 +53,41 @@ export async function getSaturdayTurns(req, res, next) {
       orderBy: { name: 'asc' }
     });
 
-    // Merge points and schedulings
-    const result = activePoints.map(point => {
-      const scheduling = schedulings.find(s => s.pointId === point.id);
-      if (scheduling) {
-        return {
-          id: scheduling.id,
-          pointId: point.id,
-          point: point,
-          user: scheduling.user,
-          status: scheduling.status,
-          saturdayDate: scheduling.saturdayDate
-        };
-      } else {
-        return {
-          id: `vacant-${point.id}`,
-          pointId: point.id,
-          point: point,
-          user: null,
-          status: 'Vacante',
-          saturdayDate: saturday
-        };
+    const result = [];
+
+    for (const satDate of targetDates) {
+      const satSchedulings = schedulings.filter(s => s.saturdayDate.getTime() === satDate.getTime());
+      
+      for (const point of activePoints) {
+        const scheduling = satSchedulings.find(s => s.pointId === point.id);
+        if (scheduling) {
+          result.push({
+            id: scheduling.id,
+            pointId: point.id,
+            point: point,
+            user: scheduling.user,
+            status: scheduling.status,
+            saturdayDate: scheduling.saturdayDate
+          });
+        } else {
+          result.push({
+            id: `vacant-${point.id}-${satDate.getTime()}`,
+            pointId: point.id,
+            point: point,
+            user: null,
+            status: 'Vacante',
+            saturdayDate: satDate
+          });
+        }
       }
+    }
+
+    // Sort by Date asc, then Point name asc
+    result.sort((a, b) => {
+      if (a.saturdayDate.getTime() !== b.saturdayDate.getTime()) {
+        return a.saturdayDate.getTime() - b.saturdayDate.getTime();
+      }
+      return a.point.name.localeCompare(b.point.name);
     });
 
     res.json(result);

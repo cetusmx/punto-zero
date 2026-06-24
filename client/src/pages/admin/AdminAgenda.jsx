@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Box, Typography, Grid, Card, CardContent, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Paper, Chip,
@@ -12,7 +12,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { format, addDays, isSaturday } from 'date-fns'
+import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import api from '../../lib/api'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -29,10 +29,20 @@ export default function AdminAgenda() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [turns, setTurns] = useState([])
+  const [points, setPoints] = useState([])
   
+  // Filters
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date()
+    return format(today, 'yyyy-MM')
+  })
+  const [selectedPoint, setSelectedPoint] = useState('all')
+  const [searchName, setSearchName] = useState('')
+
   // Replacement modal states
   const [replacementOpen, setReplacementOpen] = useState(false)
   const [replacementPoint, setReplacementPoint] = useState(null)
+  const [replacementDate, setReplacementDate] = useState(null)
   const [volunteers, setVolunteers] = useState([])
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [modalLoading, setModalLoading] = useState(false)
@@ -46,26 +56,32 @@ export default function AdminAgenda() {
 
   const [confirmDialog, setConfirmDialog] = useState({ open: false })
 
-  // Generate list of recent and future Saturdays
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date()
-    const currentSaturday = isSaturday(today) ? today : addDays(today, 6 - today.getDay())
-    return format(currentSaturday, 'yyyy-MM-dd')
-  })
+  useEffect(() => {
+    fetchPoints()
+  }, [])
 
   useEffect(() => {
     fetchTurns()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate])
+  }, [selectedMonth])
+
+  async function fetchPoints() {
+    try {
+      const { data } = await api.get('/admin/collection-points')
+      setPoints(data)
+    } catch {
+      console.error('Error fetching points')
+    }
+  }
 
   async function fetchTurns() {
     setLoading(true)
     setError('')
     try {
-      const { data } = await api.get(`/admin/agenda/turns?date=${selectedDate}`)
+      const { data } = await api.get(`/admin/agenda/turns?month=${selectedMonth}`)
       setTurns(data)
     } catch {
-      setError('Error al cargar los turnos del sábado seleccionado.')
+      setError('Error al cargar los turnos del mes seleccionado.')
     } finally {
       setLoading(false)
     }
@@ -151,14 +167,16 @@ export default function AdminAgenda() {
     }
   }
 
-  async function openReplacementModal(point) {
+  async function openReplacementModal(point, satDate) {
     setReplacementPoint(point)
+    setReplacementDate(satDate)
     setReplacementOpen(true)
     setSelectedVolunteer(null)
     setModalLoading(true)
     setModalError('')
     try {
-      const { data } = await api.get(`/admin/users/eligible-volunteers?date=${selectedDate}`)
+      const dateStr = new Date(satDate).toISOString().split('T')[0]
+      const { data } = await api.get(`/admin/users/eligible-volunteers?date=${dateStr}`)
       setVolunteers(data)
     } catch {
       setModalError('Error al cargar la lista de voluntarios elegibles.')
@@ -168,13 +186,14 @@ export default function AdminAgenda() {
   }
 
   async function handleAssignReplacement() {
-    if (!selectedVolunteer || !replacementPoint) return
+    if (!selectedVolunteer || !replacementPoint || !replacementDate) return
     setModalLoading(true)
     setModalError('')
     try {
+      const dateStr = new Date(replacementDate).toISOString().split('T')[0]
       await api.post('/admin/agenda/turns/assign-replacement', {
         pointId: replacementPoint.id,
-        saturdayDate: selectedDate,
+        saturdayDate: dateStr,
         userId: selectedVolunteer.id
       })
       setReplacementOpen(false)
@@ -188,14 +207,13 @@ export default function AdminAgenda() {
     }
   }
 
-  // Generate 6 Saturdays (1 past, 5 future)
-  const saturdays = []
-  const today = new Date()
-  const prevSatOffset = -(today.getDay() + 1)
-  const baseSat = addDays(today, prevSatOffset) // Precise previous Saturday calculation
-  for (let i = 0; i < 6; i++) {
-    saturdays.push(addDays(baseSat, i * 7))
-  }
+  const filteredTurns = useMemo(() => {
+    return turns.filter(t => {
+      const matchesPoint = selectedPoint === 'all' || t.pointId === selectedPoint
+      const matchesSearch = searchName === '' || (t.user && t.user.name.toLowerCase().includes(searchName.toLowerCase()))
+      return matchesPoint && matchesSearch
+    })
+  }, [turns, selectedPoint, searchName])
 
   const isAllUpcomingSelected = upcomingTurns.length > 0 && massCancelIds.length === upcomingTurns.length
 
@@ -212,7 +230,7 @@ export default function AdminAgenda() {
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>Gestión Sabatina</Typography>
-          <Typography color="text.secondary">Control de asistencia, cancelaciones y asignación de reemplazos</Typography>
+          <Typography color="text.secondary">Control de asistencia, cancelaciones y asignación de reemplazos por mes</Typography>
         </Box>
         <IconButton onClick={() => { fetchTurns(); if(accordionExpanded) fetchUpcoming(); }} disabled={loading || upcomingLoading}>
           <RefreshIcon />
@@ -297,142 +315,165 @@ export default function AdminAgenda() {
         </AccordionDetails>
       </Accordion>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={3}>
-          <Card elevation={0} sx={{ borderRadius: '24px', border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>Seleccionar Sábado</Typography>
+      <Card elevation={0} sx={{ borderRadius: '24px', border: '1px solid', borderColor: 'divider', mb: 3 }}>
+        <CardContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <TextField
+                type="month"
+                label="Mes"
+                fullWidth
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                size="small"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
               <TextField
                 select
+                label="Filtrar por Punto"
                 fullWidth
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                value={selectedPoint}
+                onChange={(e) => setSelectedPoint(e.target.value)}
                 size="small"
               >
-                {saturdays.map((sat) => (
-                  <MenuItem key={sat.toISOString()} value={format(sat, 'yyyy-MM-dd')}>
-                    {format(sat, "d 'de' MMMM", { locale: es })}
-                  </MenuItem>
+                <MenuItem value="all">Todos los puntos</MenuItem>
+                {points.map(p => (
+                  <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
                 ))}
               </TextField>
-            </CardContent>
-          </Card>
-        </Grid>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Buscar Voluntario"
+                fullWidth
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                size="small"
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
-        <Grid item xs={12} md={9}>
-          {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '16px' }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '16px' }}>{error}</Alert>}
 
-          <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '24px', border: '1px solid', borderColor: 'divider' }}>
-            <Table>
-              <TableHead sx={{ bgcolor: 'grey.50' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Voluntario</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Punto de Acopio</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Estatus</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">Acciones</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 8 }}>
-                      <CircularProgress size={32} />
-                    </TableCell>
-                  </TableRow>
-                ) : turns.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 8 }}>
-                      <Typography color="text.disabled">No hay puntos de acopio activos registrados.</Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  turns.map((turn) => (
-                    <TableRow key={turn.id} hover>
-                      <TableCell>
-                        {turn.user ? (
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{turn.user.name}</Typography>
-                            <Typography variant="caption" color="text.secondary">{turn.user.phone}</Typography>
-                          </Box>
-                        ) : (
-                          <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                            {turn.status === 'Cancelado' ? 'Cancelado (Sin asignar)' : 'Vacante (Sin reservar)'}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{turn.point.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">{turn.point.colonia}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={turn.status} 
-                          color={STATUS_COLORS[turn.status]} 
-                          size="small" 
-                          sx={{ fontWeight: 600, borderRadius: '8px' }} 
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                          {turn.user && turn.status !== 'Cancelado' ? (
-                            <>
-                              {turn.status !== 'Asistio' && (
-                                <Button 
-                                  size="small" 
-                                  variant="outlined" 
-                                  color="success" 
-                                  startIcon={<CheckCircleIcon />}
-                                  onClick={() => handleUpdateStatus(turn.id, 'Asistio')}
-                                  sx={{ borderRadius: '8px', textTransform: 'none' }}
-                                >
-                                  Asistencia
-                                </Button>
-                              )}
-                              {turn.status !== 'Falta' && (
-                                <Button 
-                                  size="small" 
-                                  variant="outlined" 
-                                  color="error" 
-                                  startIcon={<CancelIcon />}
-                                  onClick={() => handleUpdateStatus(turn.id, 'Falta')}
-                                  sx={{ borderRadius: '8px', textTransform: 'none' }}
-                                >
-                                  Falta
-                                </Button>
-                              )}
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                color="warning"
-                                startIcon={<CancelIcon />}
-                                onClick={() => handleCancelTurn(turn.id)}
-                                sx={{ borderRadius: '8px', textTransform: 'none' }}
-                              >
-                                Cancelar
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="primary"
-                              startIcon={<PersonAddIcon />}
-                              onClick={() => openReplacementModal(turn.point)}
+      <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '24px', border: '1px solid', borderColor: 'divider' }}>
+        <Table>
+          <TableHead sx={{ bgcolor: 'grey.50' }}>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 700 }}>Fecha</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Voluntario</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Punto de Acopio</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Estatus</TableCell>
+              <TableCell sx={{ fontWeight: 700 }} align="right">Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                  <CircularProgress size={32} />
+                </TableCell>
+              </TableRow>
+            ) : filteredTurns.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                  <Typography color="text.disabled">No hay resultados para los filtros seleccionados.</Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredTurns.map((turn) => (
+                <TableRow key={turn.id} hover>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {format(new Date(turn.saturdayDate), "d 'de' MMMM", { locale: es })}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {turn.user ? (
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{turn.user.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">{turn.user.phone}</Typography>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                        {turn.status === 'Cancelado' ? 'Cancelado (Sin asignar)' : 'Vacante (Sin reservar)'}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{turn.point.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">{turn.point.colonia}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={turn.status} 
+                      color={STATUS_COLORS[turn.status]} 
+                      size="small" 
+                      sx={{ fontWeight: 600, borderRadius: '8px' }} 
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      {turn.user && turn.status !== 'Cancelado' ? (
+                        <>
+                          {turn.status !== 'Asistio' && (
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              color="success" 
+                              startIcon={<CheckCircleIcon />}
+                              onClick={() => handleUpdateStatus(turn.id, 'Asistio')}
                               sx={{ borderRadius: '8px', textTransform: 'none' }}
                             >
-                              Asignar Reemplazo
+                              Asistencia
                             </Button>
                           )}
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Grid>
-      </Grid>
+                          {turn.status !== 'Falta' && (
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              color="error" 
+                              startIcon={<CancelIcon />}
+                              onClick={() => handleUpdateStatus(turn.id, 'Falta')}
+                              sx={{ borderRadius: '8px', textTransform: 'none' }}
+                            >
+                              Falta
+                            </Button>
+                          )}
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="warning"
+                            startIcon={<CancelIcon />}
+                            onClick={() => handleCancelTurn(turn.id)}
+                            sx={{ borderRadius: '8px', textTransform: 'none' }}
+                          >
+                            Cancelar
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="primary"
+                          startIcon={<PersonAddIcon />}
+                          onClick={() => openReplacementModal(turn.point, turn.saturdayDate)}
+                          sx={{ borderRadius: '8px', textTransform: 'none' }}
+                        >
+                          Reemplazo
+                        </Button>
+                      )}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Replacement Assignment Modal */}
       <Dialog 
@@ -445,7 +486,7 @@ export default function AdminAgenda() {
         <DialogTitle sx={{ fontWeight: 700 }}>Asignar Reemplazo</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Selecciona un voluntario elegible para asignar al punto <strong>{replacementPoint?.name}</strong> para el sábado <strong>{selectedDate}</strong>.
+            Selecciona un voluntario elegible para asignar al punto <strong>{replacementPoint?.name}</strong> para el sábado <strong>{replacementDate && format(new Date(replacementDate), "d 'de' MMMM", { locale: es })}</strong>.
           </Typography>
           {modalError && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{modalError}</Alert>}
           {modalLoading ? (
