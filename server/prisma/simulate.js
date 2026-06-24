@@ -7,18 +7,19 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('[Simulate] Iniciando script de simulación...');
 
-  // 1. Crear un Punto de Acopio temporal para asignar los turnos
-  let point = await prisma.collectionPoint.findFirst();
-  if (!point) {
-    point = await prisma.collectionPoint.create({
-      data: {
-        name: 'Punto Cero Principal',
-        colonia: 'Centro',
-        address: 'Plaza Central',
-        status: 'Activo'
-      }
+  // 1. Crear Puntos de Acopio temporales para asignar los turnos sin colisionar
+  let point1 = await prisma.collectionPoint.findFirst({ where: { name: 'Punto Cero Simulado 1' } });
+  if (!point1) {
+    point1 = await prisma.collectionPoint.create({
+      data: { name: 'Punto Cero Simulado 1', colonia: 'Simulada', status: 'Activo' }
     });
-    console.log('[Simulate] Punto de acopio creado.');
+  }
+
+  let point2 = await prisma.collectionPoint.findFirst({ where: { name: 'Punto Cero Simulado 2' } });
+  if (!point2) {
+    point2 = await prisma.collectionPoint.create({
+      data: { name: 'Punto Cero Simulado 2', colonia: 'Simulada', status: 'Activo' }
+    });
   }
 
   // Contraseña por defecto para ambos usuarios
@@ -68,7 +69,7 @@ async function main() {
   }
 
   // Función auxiliar para crear la reserva y la asistencia
-  async function createAttendanceRecord(user, date, status) {
+  async function createAttendanceRecord(user, point, date, status) {
     // Buscar si ya existe una reserva para evitar errores de duplicado
     let scheduling = await prisma.scheduling.findFirst({
       where: { userId: user.id, saturdayDate: date }
@@ -113,14 +114,14 @@ async function main() {
 
   // 5. Inyectar historial para Voluntario Perfecto (Todos "Asistio")
   for (const date of pastSaturdays) {
-    await createAttendanceRecord(userPerfecto, date, 'Asistio');
+    await createAttendanceRecord(userPerfecto, point1, date, 'Asistio');
   }
 
   // 6. Inyectar historial para Voluntario Faltista (Alternando "Asistio" y "Falta")
   // 3 Asistencias y 3 Faltas
   const statuses = ['Asistio', 'Falta', 'Asistio', 'Falta', 'Asistio', 'Falta'];
   for (let i = 0; i < 6; i++) {
-    await createAttendanceRecord(userFaltista, pastSaturdays[i], statuses[i]);
+    await createAttendanceRecord(userFaltista, point2, pastSaturdays[i], statuses[i]);
   }
 
   console.log('\n--- SIMULACIÓN COMPLETADA ---');
