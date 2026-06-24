@@ -46,18 +46,23 @@ export default function ProfilePage() {
     try {
       const { data } = await api.get('/config')
       
-      const isValidUrl = (url) => {
-        try {
-          const parsed = new URL(url);
-          return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-        } catch {
-          return false;
+      const makeValidUrl = (url) => {
+        if (!url) return '';
+        let urlStr = url.trim();
+        if (!/^https?:\/\//i.test(urlStr)) {
+          urlStr = 'https://' + urlStr;
         }
-      }
+        try {
+          new URL(urlStr);
+          return urlStr;
+        } catch {
+          return '';
+        }
+      };
 
       setLinks({
-        whatsapp_avisos_url: isValidUrl(data.data.whatsapp_avisos_url) ? data.data.whatsapp_avisos_url : '',
-        whatsapp_abierto_url: isValidUrl(data.data.whatsapp_abierto_url) ? data.data.whatsapp_abierto_url : ''
+        whatsapp_avisos_url: makeValidUrl(data.data.whatsapp_avisos_url),
+        whatsapp_abierto_url: makeValidUrl(data.data.whatsapp_abierto_url)
       })
     } catch (err) {
       console.error('Error fetching links', err)
