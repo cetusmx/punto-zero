@@ -277,6 +277,7 @@ export default function AdminAdministrators() {
             filterOptions={(x) => x} // Disable built-in filtering, trust server response
             isOptionEqualToValue={(option, value) => option?.id === value?.id}
             noOptionsText={searchQuery ? "No se encontraron voluntarios" : "Escribe para buscar..."}
+            ListboxProps={{ style: { maxHeight: 240 } }} // ~5 items
             renderInput={(params) => (
               <TextField 
                 {...params} 
