@@ -116,6 +116,18 @@ export async function updateTurnStatus(req, res, next) {
       return res.json({ message: 'Estatus sin cambios.', turn: currentTurn });
     }
 
+    // Validation: Cannot modify a turn if it is part of an already issued certificate
+    const conflictingCert = await prisma.certificateQR.findFirst({
+      where: {
+        userId: currentTurn.userId,
+        issuedAt: { gte: currentTurn.saturdayDate }
+      }
+    });
+
+    if (conflictingCert) {
+      return res.status(400).json({ error: { message: 'No se puede modificar esta reserva porque ya forma parte de un certificado emitido.' } });
+    }
+
     const oldProgress = await calculateUserProgress(currentTurn.userId);
 
     const turn = await prisma.scheduling.update({

@@ -17,12 +17,12 @@ import { es } from 'date-fns/locale'
 import api from '../../lib/api'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
-const STATUS_COLORS = {
-  Pendiente: 'warning',
-  Asistio: 'success',
-  Falta: 'error',
-  Cancelado: 'default',
-  Vacante: 'info',
+const STATUS_CONFIG = {
+  Pendiente: { color: 'warning', label: 'Pendiente' },
+  Asistio: { color: 'success', label: 'Asistió' },
+  Falta: { color: 'error', label: 'Falta' },
+  Cancelado: { color: 'default', label: 'Cancelado' },
+  Vacante: { color: 'info', label: 'Vacante' },
 }
 
 export default function AdminAgenda() {
@@ -409,8 +409,8 @@ export default function AdminAgenda() {
                   </TableCell>
                   <TableCell>
                     <Chip 
-                      label={turn.status} 
-                      color={STATUS_COLORS[turn.status]} 
+                      label={STATUS_CONFIG[turn.status]?.label || turn.status} 
+                      color={STATUS_CONFIG[turn.status]?.color || 'default'} 
                       size="small" 
                       sx={{ fontWeight: 600, borderRadius: '8px' }} 
                     />
