@@ -57,15 +57,20 @@ async function main() {
 
   console.log('[Simulate] Usuarios de prueba creados.');
 
-  // 4. Generar fechas para las últimas 6 semanas (Sábados a las 9 AM)
+  // 4. Generar fechas para las últimas 6 semanas (Sábados a las 12 PM)
   const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const dayOfWeek = today.getDay();
+  // Find the most recent Saturday
+  const daysToSubtract = (dayOfWeek + 1) % 7; 
+  const mostRecentSaturday = new Date(today);
+  mostRecentSaturday.setDate(today.getDate() - daysToSubtract);
+
   const pastSaturdays = [];
   for (let i = 6; i >= 1; i--) {
-    const pastDate = subWeeks(today, i);
-    // Asegurarnos de que sea sábado
-    const saturday = setDay(pastDate, 6, { weekStartsOn: 1 });
-    saturday.setHours(9, 0, 0, 0);
-    pastSaturdays.push(saturday);
+    const pastDate = new Date(mostRecentSaturday);
+    pastDate.setDate(mostRecentSaturday.getDate() - (i * 7));
+    pastSaturdays.push(pastDate);
   }
 
   // Función auxiliar para crear la reserva y la asistencia
