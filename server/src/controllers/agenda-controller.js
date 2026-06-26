@@ -2,6 +2,65 @@ import prisma from '../../config/prisma-client.js';
 import { calculateUserProgress } from '../services/exemption-service.js';
 import { sendSMS, getTwilioConfig } from '../config/twilio.js';
 import { logger } from '../../config/logger.js';
+import bcrypt from 'bcryptjs';
+
+export async function seedCertTestUser(req, res, next) {
+  try {
+    const hashedPassword = await bcrypt.hash('123456', 10);
+    const user = await prisma.user.upsert({
+      where: { phone: '1234567890' },
+      update: {},
+      create: {
+        name: 'Usuario Certificado Test',
+        phone: '1234567890',
+        email: 'cert@test.com',
+        password: hashedPassword,
+        role: 'volunteer',
+        gender: 'Otro',
+        age: '30-39',
+        esquema: 'Puntos de Acopio',
+        residuo: 'Crudos',
+        frecuencia: 'Semanal',
+        status: 'Alta'
+      }
+    });
+
+    const point = await prisma.collectionPoint.findFirst({ where: { status: 'Activo' } });
+    if (!point) return res.status(400).json({ error: 'No active points found' });
+
+    const attendancesDates = [
+      '2025-08-09T12:00:00Z', '2025-09-13T12:00:00Z', '2025-10-11T12:00:00Z',
+      '2025-11-29T12:00:00Z', '2026-01-03T12:00:00Z', '2026-01-17T12:00:00Z',
+      '2026-02-14T12:00:00Z', '2026-03-07T12:00:00Z', '2026-04-02T12:00:00Z',
+      '2026-05-02T12:00:00Z', '2026-06-06T12:00:00Z'
+    ];
+
+    for (const dateStr of attendancesDates) {
+      const date = new Date(dateStr);
+      let scheduling = await prisma.scheduling.findFirst({
+        where: { userId: user.id, saturdayDate: date }
+      });
+
+      if (!scheduling) {
+        scheduling = await prisma.scheduling.create({
+          data: { userId: user.id, pointId: point.id, saturdayDate: date, status: 'Asistio', acceptedTerms: true }
+        });
+      } else {
+        await prisma.scheduling.update({ where: { id: scheduling.id }, data: { status: 'Asistio' } });
+      }
+
+      const attendance = await prisma.attendance.findUnique({ where: { schedulingId: scheduling.id } });
+      if (!attendance) {
+        await prisma.attendance.create({
+          data: { schedulingId: scheduling.id, userId: user.id, status: 'Asistio', notes: 'Test certificate seeder' }
+        });
+      }
+    }
+    res.json({ success: true, message: 'Seed completed successfully', phone: '1234567890', password: '123456' });
+  } catch (err) {
+    next(err);
+  }
+}
 
 export async function getProgress(req, res, next) {
   try {
