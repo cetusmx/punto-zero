@@ -48,9 +48,14 @@ export default function HomePage() {
 
   return (
     <Box sx={{ py: { xs: 2, sm: 4 }, maxWidth: 800, mx: 'auto' }}>
-      <Typography variant="h4" sx={{ mb: 4, fontWeight: 700, color: 'primary.main', textAlign: 'center' }}>
-        Tablón de Avisos
-      </Typography>
+      <Box sx={{ mb: 4, textAlign: 'center' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main', mb: 1 }}>
+          Inicio
+        </Typography>
+        <Typography color="text.secondary">
+          Bienvenido a punto-zero
+        </Typography>
+      </Box>
 
       <Card elevation={0} sx={{ 
         borderRadius: '24px', 
