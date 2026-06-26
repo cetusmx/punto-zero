@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Box, Typography, Card, CardContent, CircularProgress, Alert } from '@mui/material'
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import api from '../lib/api'
 
 export default function HomePage() {
@@ -106,7 +106,7 @@ export default function HomePage() {
                 <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', mb: isBullet ? 1.5 : 2 }}>
                   {isBullet && (
                     <Box component="span" sx={{ color: 'success.main', mr: 1.5, mt: '4px', display: 'flex' }}>
-                      <CheckCircleOutlineIcon fontSize="small" />
+                      <CheckCircleIcon fontSize="small" />
                     </Box>
                   )}
                   <Typography variant="body1" sx={{ 
