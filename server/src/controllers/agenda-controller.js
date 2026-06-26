@@ -6,11 +6,17 @@ import bcrypt from 'bcryptjs';
 
 export async function seedCertTestUser(req, res, next) {
   try {
+    const existingUser = await prisma.user.findUnique({ where: { phone: '1234567890' } });
+    if (existingUser) {
+      await prisma.attendance.deleteMany({ where: { userId: existingUser.id } });
+      await prisma.scheduling.deleteMany({ where: { userId: existingUser.id } });
+      await prisma.certificateQR.deleteMany({ where: { userId: existingUser.id } });
+      await prisma.user.delete({ where: { id: existingUser.id } });
+    }
+
     const hashedPassword = await bcrypt.hash('123456', 10);
-    const user = await prisma.user.upsert({
-      where: { phone: '1234567890' },
-      update: {},
-      create: {
+    const user = await prisma.user.create({
+      data: {
         name: 'Usuario Certificado Test',
         phone: '1234567890',
         email: 'cert@test.com',
@@ -37,26 +43,27 @@ export async function seedCertTestUser(req, res, next) {
 
     for (const dateStr of attendancesDates) {
       const date = new Date(dateStr);
-      let scheduling = await prisma.scheduling.findFirst({
-        where: { userId: user.id, saturdayDate: date }
+      const scheduling = await prisma.scheduling.create({
+        data: { userId: user.id, pointId: point.id, saturdayDate: date, status: 'Asistio', acceptedTerms: true }
       });
 
-      if (!scheduling) {
-        scheduling = await prisma.scheduling.create({
-          data: { userId: user.id, pointId: point.id, saturdayDate: date, status: 'Asistio', acceptedTerms: true }
-        });
-      } else {
-        await prisma.scheduling.update({ where: { id: scheduling.id }, data: { status: 'Asistio' } });
-      }
-
-      const attendance = await prisma.attendance.findUnique({ where: { schedulingId: scheduling.id } });
-      if (!attendance) {
-        await prisma.attendance.create({
-          data: { schedulingId: scheduling.id, userId: user.id, status: 'Asistio', notes: 'Test certificate seeder' }
-        });
-      }
+      await prisma.attendance.create({
+        data: { schedulingId: scheduling.id, userId: user.id, status: 'Asistio', notes: 'Test certificate seeder' }
+      });
     }
-    res.json({ success: true, message: 'Seed completed successfully', phone: '1234567890', password: '123456' });
+
+    await prisma.certificateQR.create({
+      data: {
+        userId: user.id,
+        type: 'Exencion',
+        issuedAt: new Date('2026-01-18T12:00:00Z'),
+        expiresAt: new Date('2026-07-18T12:00:00Z'),
+        isActive: true,
+        attendancesAtIssuance: 6
+      }
+    });
+
+    res.json({ success: true, message: 'Seed completed successfully with Exencion certificate on 2026-01-18', phone: '1234567890', password: '123456' });
   } catch (err) {
     next(err);
   }
