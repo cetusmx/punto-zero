@@ -59,7 +59,16 @@ export async function getSaturdayTurns(req, res, next) {
       const satSchedulings = schedulings.filter(s => s.saturdayDate.getTime() === satDate.getTime());
       
       for (const point of activePoints) {
-        const scheduling = satSchedulings.find(s => s.pointId === point.id);
+        const pointSchedulings = satSchedulings.filter(s => s.pointId === point.id);
+        
+        let scheduling = null;
+        if (pointSchedulings.length > 0) {
+          scheduling = pointSchedulings.find(s => s.status !== 'Cancelado');
+          if (!scheduling) {
+            scheduling = pointSchedulings.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+          }
+        }
+
         if (scheduling) {
           result.push({
             id: scheduling.id,
