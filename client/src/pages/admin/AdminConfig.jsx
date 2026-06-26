@@ -33,13 +33,13 @@ export default function AdminConfig() {
         twilio_auth_token: data.data.twilio_auth_token || '',
         twilio_phone_number: data.data.twilio_phone_number || '',
         admin_phone: data.data.admin_phone || '',
-        tablon_title: data.data.tablon_title || '',
-        tablon_subtitle: data.data.tablon_subtitle || '',
-        tablon_body: data.data.tablon_body || '',
-        tablon_footer: data.data.tablon_footer || '',
+        tablon_title: data.data.tablon_title || 'PUNTOS DE ACOPIO',
+        tablon_subtitle: data.data.tablon_subtitle || 'TÉRMINOS DE VOLUNTARIADO',
+        tablon_body: data.data.tablon_body || 'Puedes apoyar las ocasiones que gustes, pero si deseas exentar la aportación de $40 por cubeta intercambiada, durante 1 año, estas son las condiciones...\n\nAtender algún punto de acopio al menos por seis ocasiones al año.\n\nEstas seis ocasiones deberán ser dentro de un periodo de seis meses. Si no se cumple la condición, se resetea el conteo de apoyos.\n\nLa exención de la aportación económica inicia después de cubrir las seis ocasiones de apoyo.',
+        tablon_footer: data.data.tablon_footer || 'PUNTO ZERO\nJUNTOS POR EL PLANETA',
         tablon_show_schedules: data.data.tablon_show_schedules === 'true',
-        tablon_schedules_title: data.data.tablon_schedules_title || '',
-        tablon_schedules_body: data.data.tablon_schedules_body || ''
+        tablon_schedules_title: data.data.tablon_schedules_title || 'HORARIOS',
+        tablon_schedules_body: data.data.tablon_schedules_body || 'Jardines Hda: 8 am - apertura / 12 pm - cierre\nCarretas: 9 am - apertura / 1:30 pm - cierre\nEl Refugio: 10 am - apertura / 2 pm - cierre'
       })
     } catch (err) {
       console.error('Error fetching config', err)
