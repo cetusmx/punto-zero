@@ -12,6 +12,7 @@ import AgendaPage from '../pages/AgendaPage'
 import MySchedulesPage from '../pages/MySchedulesPage'
 import CertificatesPage from '../pages/CertificatesPage'
 import ProfilePage from '../pages/ProfilePage'
+import NotificationsPage from '../pages/NotificationsPage'
 import { useAuth } from '../context/AuthContext'
 import logo from '../assets/logo.png'
 
@@ -54,6 +55,7 @@ export default function VolunteerLayout() {
           <Route path="mis-turnos" element={<MySchedulesPage />} />
           <Route path="certificados" element={<CertificatesPage />} />
           <Route path="perfil" element={<ProfilePage />} />
+          <Route path="notificaciones" element={<NotificationsPage />} />
         </Routes>
       </Box>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }} elevation={3}>
