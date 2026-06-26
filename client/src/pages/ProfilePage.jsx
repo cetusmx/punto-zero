@@ -34,6 +34,7 @@ export default function ProfilePage() {
   const [links, setLinks] = useState({ whatsapp_avisos_url: '', whatsapp_abierto_url: '' })
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingStatus, setPendingStatus] = useState('')
+  const [expandedNotifId, setExpandedNotifId] = useState(null)
 
   const isMandatory = !user?.gender
 
@@ -172,54 +173,6 @@ export default function ProfilePage() {
           : 'Gestiona tu información personal y de participación.'}
       </Typography>
 
-      {!isMandatory && notifications && notifications.length > 0 && (
-        <Card elevation={0} sx={{
-          borderRadius: '24px',
-          border: '1px solid',
-          borderColor: 'divider',
-          mb: 4,
-          overflow: 'hidden'
-        }}>
-          <Box sx={{ p: 3, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <NotificationsIcon color="primary" /> Últimas notificaciones
-            </Typography>
-            <Button
-              component={RouterLink}
-              to="/notificaciones"
-              size="small"
-              sx={{ textTransform: 'none', fontWeight: 600 }}
-            >
-              Ver todas
-            </Button>
-          </Box>
-          <List disablePadding>
-            {notifications.slice(0, 3).map((notif, index) => (
-              <Box key={notif.id}>
-                <ListItem sx={{ bgcolor: notif.read ? 'transparent' : 'primary.50', py: 2 }}>
-                  <Box sx={{ display: 'flex', width: '100%', alignItems: 'flex-start' }}>
-                    <Badge color="error" variant="dot" invisible={notif.read} sx={{ mr: 2, mt: 1 }}>
-                      <NotificationsIcon fontSize="small" color={notif.read ? "disabled" : "primary"} />
-                    </Badge>
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: notif.read ? 600 : 700 }}>
-                        {notif.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {notif.message}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: es })}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </ListItem>
-                {index < Math.min(notifications.length - 1, 2) && <Divider />}
-              </Box>
-            ))}
-          </List>
-        </Card>
-      )}
 
       {user?.status === 'Alta' && (
         <Card elevation={0} sx={{ 
@@ -402,6 +355,72 @@ export default function ProfilePage() {
           </Box>
         </CardContent>
       </Card>
+
+      {!isMandatory && notifications && notifications.length > 0 && (
+        <Card elevation={0} sx={{
+          borderRadius: '24px',
+          border: '1px solid',
+          borderColor: 'divider',
+          mb: 4,
+          overflow: 'hidden'
+        }}>
+          <Box sx={{ p: 3, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <NotificationsIcon color="primary" /> Últimas notificaciones
+            </Typography>
+            <Button
+              component={RouterLink}
+              to="/notificaciones"
+              size="small"
+              sx={{ textTransform: 'none', fontWeight: 600 }}
+            >
+              Ver todas
+            </Button>
+          </Box>
+          <List disablePadding>
+            {notifications.slice(0, 3).map((notif, index) => {
+              const isExpanded = expandedNotifId === notif.id
+              return (
+                <Box key={notif.id}>
+                  <ListItem 
+                    button 
+                    onClick={() => setExpandedNotifId(isExpanded ? null : notif.id)}
+                    sx={{ bgcolor: notif.read ? 'transparent' : 'primary.50', py: 2 }}
+                  >
+                    <Box sx={{ display: 'flex', width: '100%', alignItems: 'flex-start' }}>
+                      <Badge color="error" variant="dot" invisible={notif.read} sx={{ mr: 2, mt: 1 }}>
+                        <NotificationsIcon fontSize="small" color={notif.read ? "disabled" : "primary"} />
+                      </Badge>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: notif.read ? 600 : 700 }}>
+                          {notif.title}
+                        </Typography>
+                        <Typography 
+                          variant="body2" 
+                          color="text.secondary" 
+                          sx={{ 
+                            mb: 0.5, 
+                            display: isExpanded ? 'block' : '-webkit-box', 
+                            WebkitLineClamp: isExpanded ? 'unset' : 2, 
+                            WebkitBoxOrient: 'vertical', 
+                            overflow: 'hidden' 
+                          }}
+                        >
+                          {notif.message}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: es })}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </ListItem>
+                  {index < Math.min(notifications.length - 1, 2) && <Divider />}
+                </Box>
+              )
+            })}
+          </List>
+        </Card>
+      )}
 
       {!isMandatory && (
         <Button
