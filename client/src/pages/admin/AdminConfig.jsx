@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, Card, CardContent, TextField, Button, Snackbar, Alert, CircularProgress, Divider } from '@mui/material'
+import { Box, Typography, Card, CardContent, TextField, Button, Snackbar, Alert, CircularProgress, Divider, FormControlLabel, Checkbox } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
 import { getConfig, updateConfig } from '../../services/admin.js'
 
@@ -16,7 +16,10 @@ export default function AdminConfig() {
     tablon_title: '',
     tablon_subtitle: '',
     tablon_body: '',
-    tablon_footer: ''
+    tablon_footer: '',
+    tablon_show_schedules: false,
+    tablon_schedules_title: '',
+    tablon_schedules_body: ''
   })
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
@@ -33,7 +36,10 @@ export default function AdminConfig() {
         tablon_title: data.data.tablon_title || '',
         tablon_subtitle: data.data.tablon_subtitle || '',
         tablon_body: data.data.tablon_body || '',
-        tablon_footer: data.data.tablon_footer || ''
+        tablon_footer: data.data.tablon_footer || '',
+        tablon_show_schedules: data.data.tablon_show_schedules === 'true',
+        tablon_schedules_title: data.data.tablon_schedules_title || '',
+        tablon_schedules_body: data.data.tablon_schedules_body || ''
       })
     } catch (err) {
       console.error('Error fetching config', err)
@@ -49,8 +55,8 @@ export default function AdminConfig() {
   }, [])
 
   function handleChange(e) {
-    const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = e.target
+    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }))
   }
 
   const isValidUrlOrEmpty = (url) => {
@@ -71,7 +77,9 @@ export default function AdminConfig() {
     e.preventDefault()
     setLoading(true)
     try {
-      await updateConfig(form)
+      // transform boolean to string before sending
+      const payload = { ...form, tablon_show_schedules: String(form.tablon_show_schedules) }
+      await updateConfig(payload)
       setSnackbar({ open: true, message: 'Configuración guardada exitosamente', severity: 'success' })
     } catch (err) {
       console.error('Error updating config', err)
@@ -169,6 +177,48 @@ export default function AdminConfig() {
               placeholder="PUNTO ZERO - JUNTOS POR EL PLANETA"
               sx={{ mb: 4 }}
             />
+
+            <Divider sx={{ mb: 4 }} />
+
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>Horarios (Opcional)</Typography>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={form.tablon_show_schedules}
+                    onChange={handleChange}
+                    name="tablon_show_schedules"
+                    color="primary"
+                  />
+                }
+                label="Mostrar sección de horarios en el tablón"
+                sx={{ mb: 3 }}
+              />
+              
+              {form.tablon_show_schedules && (
+                <>
+                  <TextField
+                    fullWidth
+                    label="Título de horarios"
+                    name="tablon_schedules_title"
+                    value={form.tablon_schedules_title}
+                    onChange={handleChange}
+                    placeholder="HORARIOS"
+                    sx={{ mb: 3 }}
+                  />
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    label="Lista de horarios (uno por línea)"
+                    name="tablon_schedules_body"
+                    value={form.tablon_schedules_body}
+                    onChange={handleChange}
+                    placeholder="Jardines Hda: 8 am - apertura / 12 pm - cierre&#10;Carretas: 9 am - apertura / 1:30 pm - cierre"
+                  />
+                </>
+              )}
+            </Box>
 
             <Divider sx={{ mb: 4 }} />
 

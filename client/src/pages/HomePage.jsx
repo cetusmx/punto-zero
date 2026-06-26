@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, Card, CardContent, CircularProgress, Alert } from '@mui/material'
+import { Box, Typography, Card, CardContent, CircularProgress, Alert, Divider } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import api from '../lib/api'
 
 export default function HomePage() {
@@ -46,6 +47,10 @@ export default function HomePage() {
   const subtitle = config.tablon_subtitle || 'TÉRMINOS DE VOLUNTARIADO'
   const body = config.tablon_body || 'Puedes apoyar las ocasiones que gustes, pero si deseas exentar la aportación de $40 por cubeta intercambiada, durante 1 año, estas son las condiciones...\n\nAtender algún punto de acopio al menos por seis ocasiones al año.\n\nEstas seis ocasiones deberán ser dentro de un periodo de seis meses. Si no se cumple la condición, se resetea el conteo de apoyos.\n\nLa exención de la aportación económica inicia después de cubrir las seis ocasiones de apoyo.'
   const footer = config.tablon_footer || 'PUNTO ZERO\nJUNTOS POR EL PLANETA'
+  
+  const showSchedules = config.tablon_show_schedules === 'true'
+  const schedulesTitle = config.tablon_schedules_title || 'HORARIOS'
+  const schedulesBody = config.tablon_schedules_body || 'Jardines Hda: 8 am - apertura / 12 pm - cierre\nCarretas: 9 am - apertura / 1:30 pm - cierre\nEl Refugio: 10 am - apertura / 2 pm - cierre'
 
   return (
     <Box sx={{ py: { xs: 2, sm: 4 }, maxWidth: 800, mx: 'auto' }}>
@@ -118,6 +123,46 @@ export default function HomePage() {
               )
             })}
           </Box>
+
+          {showSchedules && (
+            <Box sx={{ 
+              mb: 4,
+              p: 3, 
+              bgcolor: 'primary.50',
+              borderRadius: '16px',
+              border: '1px dashed',
+              borderColor: 'primary.200'
+            }}>
+              <Typography variant="subtitle1" sx={{ 
+                fontWeight: 700, 
+                color: 'primary.main', 
+                mb: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <AccessTimeIcon fontSize="small" />
+                {schedulesTitle}
+              </Typography>
+              
+              {schedulesBody.split('\n').map((line, idx) => {
+                if (!line.trim()) return null;
+                const [point, ...rest] = line.split(':')
+                const schedule = rest.join(':')
+                
+                return (
+                  <Box key={idx} sx={{ display: 'flex', flexWrap: 'wrap', mb: 1, gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                      • {point.trim()}:
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      {schedule.trim()}
+                    </Typography>
+                  </Box>
+                )
+              })}
+            </Box>
+          )}
 
           <Box sx={{ 
             borderTop: '1px solid', 

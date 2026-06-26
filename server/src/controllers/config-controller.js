@@ -9,7 +9,10 @@ export async function getConfig(req, res, next) {
       tablon_title: '',
       tablon_subtitle: '',
       tablon_body: '',
-      tablon_footer: ''
+      tablon_footer: '',
+      tablon_show_schedules: 'false',
+      tablon_schedules_title: '',
+      tablon_schedules_body: ''
     };
 
     const keysToFetch = [
@@ -18,7 +21,10 @@ export async function getConfig(req, res, next) {
       'tablon_title',
       'tablon_subtitle',
       'tablon_body',
-      'tablon_footer'
+      'tablon_footer',
+      'tablon_show_schedules',
+      'tablon_schedules_title',
+      'tablon_schedules_body'
     ];
     if (user && (user.role === 'admin' || user.role === 'superadmin')) {
       keysToFetch.push('twilio_account_sid', 'twilio_auth_token', 'twilio_phone_number', 'admin_phone');
@@ -66,7 +72,10 @@ export async function updateConfig(req, res, next) {
       'tablon_title',
       'tablon_subtitle',
       'tablon_body',
-      'tablon_footer'
+      'tablon_footer',
+      'tablon_show_schedules',
+      'tablon_schedules_title',
+      'tablon_schedules_body'
     ];
     
     const itemsToUpsert = [];
