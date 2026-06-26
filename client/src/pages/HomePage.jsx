@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Box, Typography, Card, CardContent, CircularProgress, Alert } from '@mui/material'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import api from '../lib/api'
 
 export default function HomePage() {
@@ -98,14 +99,27 @@ export default function HomePage() {
             borderColor: 'grey.100',
             mb: 4
           }}>
-            <Typography variant="body1" sx={{ 
-              color: 'text.primary', 
-              whiteSpace: 'pre-wrap',
-              lineHeight: 1.8,
-              fontSize: '1.05rem'
-            }}>
-              {body}
-            </Typography>
+            {body.split('\n').map((line, idx) => {
+              if (!line.trim()) return <Box key={idx} sx={{ height: 16 }} /> // Space for empty lines
+              const isBullet = line.includes('Atender algún') || line.includes('Estas seis ocasiones') || line.includes('La exención de la aportación');
+              return (
+                <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', mb: isBullet ? 1.5 : 2 }}>
+                  {isBullet && (
+                    <Box component="span" sx={{ color: 'success.main', mr: 1.5, mt: '4px', display: 'flex' }}>
+                      <CheckCircleOutlineIcon fontSize="small" />
+                    </Box>
+                  )}
+                  <Typography variant="body1" sx={{ 
+                    color: 'text.primary', 
+                    lineHeight: 1.7,
+                    fontSize: '1.05rem',
+                    fontWeight: isBullet ? 500 : 400
+                  }}>
+                    {line}
+                  </Typography>
+                </Box>
+              )
+            })}
           </Box>
 
           <Box sx={{ 
