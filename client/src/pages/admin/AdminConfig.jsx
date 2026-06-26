@@ -12,7 +12,11 @@ export default function AdminConfig() {
     twilio_account_sid: '',
     twilio_auth_token: '',
     twilio_phone_number: '',
-    admin_phone: ''
+    admin_phone: '',
+    tablon_title: '',
+    tablon_subtitle: '',
+    tablon_body: '',
+    tablon_footer: ''
   })
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
@@ -25,7 +29,11 @@ export default function AdminConfig() {
         twilio_account_sid: data.data.twilio_account_sid || '',
         twilio_auth_token: data.data.twilio_auth_token || '',
         twilio_phone_number: data.data.twilio_phone_number || '',
-        admin_phone: data.data.admin_phone || ''
+        admin_phone: data.data.admin_phone || '',
+        tablon_title: data.data.tablon_title || '',
+        tablon_subtitle: data.data.tablon_subtitle || '',
+        tablon_body: data.data.tablon_body || '',
+        tablon_footer: data.data.tablon_footer || ''
       })
     } catch (err) {
       console.error('Error fetching config', err)
@@ -115,6 +123,50 @@ export default function AdminConfig() {
               placeholder="https://chat.whatsapp.com/..."
               error={!!abiertoError}
               helperText={abiertoError}
+              sx={{ mb: 4 }}
+            />
+
+            <Divider sx={{ mb: 4 }} />
+
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Tablón de Avisos (Inicio)</Typography>
+            <TextField
+              fullWidth
+              label="Título"
+              name="tablon_title"
+              value={form.tablon_title}
+              onChange={handleChange}
+              placeholder="PUNTOS DE ACOPIO"
+              sx={{ mb: 3 }}
+            />
+            <TextField
+              fullWidth
+              label="Subtítulo"
+              name="tablon_subtitle"
+              value={form.tablon_subtitle}
+              onChange={handleChange}
+              placeholder="TÉRMINOS DE VOLUNTARIADO"
+              sx={{ mb: 3 }}
+            />
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              label="Cuerpo del mensaje"
+              name="tablon_body"
+              value={form.tablon_body}
+              onChange={handleChange}
+              placeholder="Escribe el cuerpo del mensaje..."
+              sx={{ mb: 3 }}
+            />
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              label="Footer"
+              name="tablon_footer"
+              value={form.tablon_footer}
+              onChange={handleChange}
+              placeholder="PUNTO ZERO - JUNTOS POR EL PLANETA"
               sx={{ mb: 4 }}
             />
 

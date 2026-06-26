@@ -5,10 +5,21 @@ export async function getConfig(req, res, next) {
     const user = req.user;
     let configData = {
       whatsapp_avisos_url: '',
-      whatsapp_abierto_url: ''
+      whatsapp_abierto_url: '',
+      tablon_title: '',
+      tablon_subtitle: '',
+      tablon_body: '',
+      tablon_footer: ''
     };
 
-    const keysToFetch = ['whatsapp_avisos_url', 'whatsapp_abierto_url'];
+    const keysToFetch = [
+      'whatsapp_avisos_url', 
+      'whatsapp_abierto_url',
+      'tablon_title',
+      'tablon_subtitle',
+      'tablon_body',
+      'tablon_footer'
+    ];
     if (user && (user.role === 'admin' || user.role === 'superadmin')) {
       keysToFetch.push('twilio_account_sid', 'twilio_auth_token', 'twilio_phone_number', 'admin_phone');
     }
@@ -51,7 +62,11 @@ export async function updateConfig(req, res, next) {
       'twilio_account_sid',
       'twilio_auth_token',
       'twilio_phone_number',
-      'admin_phone'
+      'admin_phone',
+      'tablon_title',
+      'tablon_subtitle',
+      'tablon_body',
+      'tablon_footer'
     ];
     
     const itemsToUpsert = [];
