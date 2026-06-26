@@ -51,10 +51,7 @@ export default function HomePage() {
     <Box sx={{ py: { xs: 2, sm: 4 }, maxWidth: 800, mx: 'auto' }}>
       <Box sx={{ mb: 4, textAlign: 'center' }}>
         <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main', mb: 1 }}>
-          Inicio
-        </Typography>
-        <Typography color="text.secondary">
-          Bienvenido a punto-zero
+          Bienvenido a Punto Zero
         </Typography>
       </Box>
 
