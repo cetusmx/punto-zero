@@ -40,6 +40,15 @@ async function getTwilioClient() {
 }
 
 export async function sendSMS(to, body) {
+  let formattedTo = String(to).trim();
+  // If it's exactly 10 digits (standard Mexican format) and doesn't start with +, prepend +52
+  if (/^\d{10}$/.test(formattedTo)) {
+    formattedTo = '+52' + formattedTo;
+  } else if (!formattedTo.startsWith('+') && /^\d+$/.test(formattedTo)) {
+    // If it's more than 10 digits but missing +, just prepend +
+    formattedTo = '+' + formattedTo;
+  }
+
   const client = await getTwilioClient();
   const config = await getTwilioConfig();
   const fromPhone = config.twilioPhone;
@@ -48,10 +57,10 @@ export async function sendSMS(to, body) {
     try {
       const message = await client.messages.create({
         body,
-        to,
+        to: formattedTo,
         from: fromPhone,
       });
-      logger.info(`SMS sent to ${to}, sid: ${message.sid}`);
+      logger.info(`SMS sent to ${formattedTo}, sid: ${message.sid}`);
       return { success: true, sid: message.sid };
     } catch (err) {
       logger.error(`Twilio SMS failed for ${to}: ${err.message}`);
