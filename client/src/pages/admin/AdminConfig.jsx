@@ -96,7 +96,14 @@ export default function AdminConfig() {
     }
     setLoading(true)
     try {
-      const { data } = await import('../../services/admin.js').then(m => m.testSmsConfig({ to: '+52' + form.admin_phone.replace(/\D/g, '') }))
+      // Send exactly as it is, since admin_phone is expected to include the country code or be passed directly
+      let phoneStr = form.admin_phone.trim();
+      if (phoneStr.length === 10) {
+        phoneStr = '+52' + phoneStr;
+      } else if (!phoneStr.startsWith('+')) {
+        phoneStr = '+' + phoneStr;
+      }
+      const { data } = await import('../../services/admin.js').then(m => m.testSmsConfig({ to: phoneStr }))
       setSnackbar({ open: true, message: data.message || 'Prueba enviada', severity: 'success' })
     } catch (err) {
       console.error('Error testing twilio', err)
