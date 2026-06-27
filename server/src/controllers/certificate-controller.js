@@ -69,13 +69,14 @@ export async function claimReconocimiento(req, res, next) {
       }
 
       const issuedAt = new Date();
+      const expiresAt = addYears(issuedAt, 100);
 
       return await tx.certificateQR.create({
         data: {
           userId,
           type: 'Reconocimiento',
           issuedAt,
-          expiresAt: null,
+          expiresAt,
           isActive: true,
           attendancesAtIssuance: progress.totalAttendances
         }

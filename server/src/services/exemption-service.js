@@ -214,11 +214,13 @@ export async function checkAndAutoGenerateCertificate(userId) {
       }
 
       const issuedAt = new Date();
-      let expiresAt = null;
+      let expiresAt;
 
+      const { addYears } = await import('date-fns');
       if (lockedProgress.cycleType === 'Exencion') {
-        const { addYears } = await import('date-fns');
-        expiresAt = addYears(issuedAt, 1);
+        expiresAt = addYears(issuedAt, 1); // Exencion is valid for 1 year according to code
+      } else {
+        expiresAt = addYears(issuedAt, 100); // Reconocimiento does not expire, so set far future
       }
 
       const certificate = await tx.certificateQR.create({
