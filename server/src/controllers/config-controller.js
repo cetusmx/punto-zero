@@ -112,3 +112,34 @@ export async function updateConfig(req, res, next) {
     next(err);
   }
 }
+
+export async function testSmsConfig(req, res, next) {
+  try {
+    const { to } = req.body;
+    if (!to) {
+      return res.status(400).json({ error: 'Falta el número de teléfono' });
+    }
+    const { sendSMS } = await import('../config/twilio.js');
+    const result = await sendSMS(to, 'Este es un mensaje de prueba desde Punto Zero.');
+    
+    if (result.mock) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Twilio no está configurado o hay un error en las credenciales. Revisa el Account SID y Auth Token.',
+        mock: true 
+      });
+    }
+
+    if (!result.success) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Fallo al enviar a través de Twilio: ${result.error}`,
+        error: result.error
+      });
+    }
+
+    res.json({ success: true, message: `Mensaje de prueba enviado exitosamente a ${to}` });
+  } catch (err) {
+    next(err);
+  }
+}

@@ -89,6 +89,24 @@ export default function AdminConfig() {
     }
   }
 
+  async function handleTestTwilio() {
+    if (!form.admin_phone) {
+      setSnackbar({ open: true, message: 'Primero ingresa un teléfono en "Teléfono Administrador" para hacer la prueba.', severity: 'warning' })
+      return
+    }
+    setLoading(true)
+    try {
+      const { data } = await import('../../services/admin.js').then(m => m.testSmsConfig({ to: '+52' + form.admin_phone.replace(/\D/g, '') }))
+      setSnackbar({ open: true, message: data.message || 'Prueba enviada', severity: 'success' })
+    } catch (err) {
+      console.error('Error testing twilio', err)
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Error al conectar con Twilio';
+      setSnackbar({ open: true, message: errorMsg, severity: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (initialLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -253,13 +271,27 @@ export default function AdminConfig() {
             />
             <TextField
               fullWidth
-              label="Teléfono Admin (Notificaciones)"
+              label="Teléfono Administrador (Para recibir alertas de reactivación y pruebas)"
               name="admin_phone"
               value={form.admin_phone}
               onChange={handleChange}
-              placeholder="+521234567890"
+              placeholder="10 dígitos"
               sx={{ mb: 4 }}
             />
+
+            <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={handleTestTwilio}
+                disabled={loading || !form.admin_phone}
+              >
+                {loading ? 'Enviando...' : 'Probar Envío SMS'}
+              </Button>
+              <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center', maxWidth: 300 }}>
+                Asegúrate de guardar la configuración primero si hiciste cambios. El SMS de prueba llegará al Teléfono Administrador.
+              </Typography>
+            </Box>
 
             <Button
               type="submit"

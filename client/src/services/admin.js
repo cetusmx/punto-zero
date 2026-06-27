@@ -9,3 +9,4 @@ export const toggleAdminBlock = (userId, action) => api.post(`/admin/administrat
 export const getMetrics = () => api.get('/metrics');
 export const getConfig = () => api.get('/config');
 export const updateConfig = (payload) => api.put('/config', payload);
+export const testSmsConfig = (payload) => api.post('/config/test-sms', payload);
