@@ -69,6 +69,197 @@ export async function seedCertTestUser(req, res, next) {
   }
 }
 
+export async function seedPruebas1(req, res, next) {
+  try {
+    const { checkAndAutoGenerateCertificate } = await import('../services/exemption-service.js');
+    
+    // 1. Delete all volunteers and their relationships
+    const volunteers = await prisma.user.findMany({ where: { role: 'volunteer' }, select: { id: true } });
+    const volIds = volunteers.map(v => v.id);
+    
+    if (volIds.length > 0) {
+      await prisma.attendance.deleteMany({ where: { userId: { in: volIds } } });
+      await prisma.scheduling.deleteMany({ where: { userId: { in: volIds } } });
+      await prisma.certificateQR.deleteMany({ where: { userId: { in: volIds } } });
+      await prisma.notificationBadge.deleteMany({ where: { userId: { in: volIds } } });
+      await prisma.user.deleteMany({ where: { id: { in: volIds } } });
+    }
+
+    // 2. Define data
+    const USERS = {
+      'Irregular': { name: 'Usuario irregular', phone: '3333333333', email: 'irre@test.com' },
+      'Antiguo': { name: 'Usuario Antiguo', phone: '4444444444', email: 'ant@test.com' },
+      'Comprometido': { name: 'Usuario Comprometido', phone: '5555555555', email: 'comp@test.com' }
+    };
+
+    const POINTS = [
+      { id: 1, name: 'Parque Jardines de la Hacienda', colonia: 'Jardines de la Hacienda' },
+      { id: 2, name: 'Punto Cero Simulado 1', colonia: 'Simulada 1' },
+      { id: 3, name: 'Punto Cero Simulado 2', colonia: 'Simulada 2' },
+    ];
+
+    const RECORDS = [
+      { date: '2023-01-07', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-01-21', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-02-11', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-03-11', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-04-08', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-05-06', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-06-10', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-07-08', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-08-05', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-09-16', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-10-07', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-11-18', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2023-12-16', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-01-06', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-02-14', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-03-16', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-04-06', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-05-11', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-06-01', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-07-13', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-08-10', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-09-14', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-10-05', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-11-09', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2024-12-14', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-01-04', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-02-08', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-03-08', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-04-05', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-05-10', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-06-14', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-07-12', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-08-23', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-09-27', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-11-01', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-12-06', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2026-01-03', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2026-02-07', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2026-02-28', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2026-03-21', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2026-04-18', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2026-05-02', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2026-05-16', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2026-06-13', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2026-06-27', u: 'Antiguo', st: 'Asistió', pt: 1 },
+      { date: '2025-09-06', u: 'Comprometido', st: 'Asistió', pt: 1 },
+      { date: '2025-10-11', u: 'Comprometido', st: 'Asistió', pt: 1 },
+      { date: '2025-11-22', u: 'Comprometido', st: 'Asistió', pt: 1 },
+      { date: '2025-12-13', u: 'Comprometido', st: 'Asistió', pt: 1 },
+      { date: '2026-01-17', u: 'Comprometido', st: 'Asistió', pt: 2 },
+      { date: '2026-02-28', u: 'Comprometido', st: 'Asistió', pt: 2 },
+      { date: '2026-03-21', u: 'Comprometido', st: 'Asistió', pt: 2 },
+      { date: '2026-04-18', u: 'Comprometido', st: 'Asistió', pt: 2 },
+      { date: '2026-05-16', u: 'Comprometido', st: 'Asistió', pt: 2 },
+      { date: '2026-06-13', u: 'Comprometido', st: 'Asistió', pt: 2 },
+      { date: '2026-06-27', u: 'Comprometido', st: 'Asistió', pt: 2 },
+      { date: '2024-07-27', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2024-08-10', u: 'Irregular', st: 'Falta', pt: 3 },
+      { date: '2024-09-14', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2024-10-05', u: 'Irregular', st: 'Falta', pt: 3 },
+      { date: '2024-10-26', u: 'Irregular', st: 'Asistió', pt: 1 },
+      { date: '2024-12-14', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2025-01-25', u: 'Irregular', st: 'Asistió', pt: 2 },
+      { date: '2025-02-22', u: 'Irregular', st: 'Asistió', pt: 2 },
+      { date: '2025-03-08', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2025-04-05', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2025-05-31', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2025-07-12', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2025-08-09', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2025-08-23', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2025-09-27', u: 'Irregular', st: 'Asistió', pt: 2 },
+      { date: '2025-11-01', u: 'Irregular', st: 'Asistió', pt: 2 },
+      { date: '2025-12-13', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2026-01-17', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2026-02-28', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2026-03-21', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2026-04-18', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2026-05-02', u: 'Irregular', st: 'Asistió', pt: 2 },
+      { date: '2026-06-13', u: 'Irregular', st: 'Asistió', pt: 3 },
+      { date: '2026-06-27', u: 'Irregular', st: 'Asistió', pt: 3 },
+    ];
+
+    const hashedPassword = await bcrypt.hash('password123', 10);
+    const dbUsers = {};
+
+    for (const [key, userData] of Object.entries(USERS)) {
+      const created = await prisma.user.create({
+        data: {
+          ...userData,
+          password: hashedPassword,
+          role: 'volunteer',
+          gender: 'Otro',
+          age: '20-29',
+          esquema: 'Puntos de Acopio',
+          residuo: 'Todos',
+          frecuencia: 'Mensual',
+          status: 'Alta'
+        }
+      });
+      dbUsers[key] = created.id;
+    }
+
+    const dbPoints = {};
+    for (const p of POINTS) {
+      const point = await prisma.collectionPoint.upsert({
+        where: { id: p.id },
+        update: { name: p.name, colonia: p.colonia, status: 'Activo' },
+        create: { id: p.id, name: p.name, colonia: p.colonia, status: 'Activo' }
+      });
+      dbPoints[p.id] = point.id;
+    }
+
+    const { addYears } = await import('date-fns');
+
+    for (const [key, userId] of Object.entries(dbUsers)) {
+      const userRecords = RECORDS.filter(r => r.u === key).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      for (const r of userRecords) {
+        const parsedDate = new Date(`${r.date}T12:00:00Z`);
+        
+        const scheduling = await prisma.scheduling.create({
+          data: {
+            userId,
+            pointId: dbPoints[r.pt],
+            saturdayDate: parsedDate,
+            status: r.st,
+            acceptedTerms: true
+          }
+        });
+
+        await prisma.attendance.create({
+          data: {
+            schedulingId: scheduling.id,
+            userId,
+            status: r.st,
+            notes: 'Pruebas1 Seed'
+          }
+        });
+
+        if (r.st === 'Asistió') {
+          const cert = await checkAndAutoGenerateCertificate(userId);
+          if (cert) {
+            const issueDate = new Date(`${r.date}T12:00:00Z`);
+            issueDate.setDate(issueDate.getDate() + 1);
+            let expiresAt = cert.type === 'Exencion' ? addYears(issueDate, 1) : addYears(issueDate, 100);
+
+            await prisma.certificateQR.update({
+              where: { id: cert.id },
+              data: { issuedAt: issueDate, expiresAt }
+            });
+          }
+        }
+      }
+    }
+
+    res.json({ success: true, message: 'Seeding of Pruebas1 completed! All existing volunteers were wiped.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getProgress(req, res, next) {
   try {
     const userId = req.user.id;
